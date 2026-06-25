@@ -73,9 +73,3 @@ realtime voice · Amazon Bedrock (tutor only).
 ## License
 
 [MIT](./LICENSE) © Pattern AI Labs. These are example/starter apps — build freely on them.
-
----
-
-Built with **[swaram.live](https://swaram.live)** · Keywords: swaram, malayalam,
-malayalam voice, malayalam model API, voice AI, realtime voice, speech-to-speech,
-function calling, voice agent.
