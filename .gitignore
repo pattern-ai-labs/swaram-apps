@@ -1,0 +1,13 @@
+# dependencies / builds
+node_modules/
+dist/
+*.tsbuildinfo
+
+# secrets — never commit real keys (use server/.env.example as the template)
+.env
+
+# local runtime data (bookings, tickets, lessons, conversation logs)
+server/data/
+server/src/data/
+
+.DS_Store
