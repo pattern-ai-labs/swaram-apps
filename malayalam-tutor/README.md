@@ -141,8 +141,10 @@ Malayalam) with the brief (title + summary + key points + full text). Rewrite th
 persona lines to change tone or rules; the brief is appended automatically.
 
 ### 6.2 Change the voice
-The picker offers `mal-female` / `mal-male`; the default is `useState<Voice>("mal-female")`
-in `Tutor.tsx`.
+The picker offers `mal-female` / `mal-male` (the only two swaram voices); the default is
+`useState<Voice>("mal-female")` in `Tutor.tsx`. The tutor's **name follows the chosen
+voice** — **"Gita"** (female) / **"Govind"** (male) — passed into `buildInstructions`,
+so the spoken self-intro matches the voice.
 
 ### 6.3 Change how the document is understood (the Bedrock step)
 Everything about extraction is in `server/src/bedrock.ts`:

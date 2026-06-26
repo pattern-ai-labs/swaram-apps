@@ -1,6 +1,7 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { randomUUID } from "node:crypto";
+import { nameMatches, phoneMatches } from "./identity.js";
 
 // Closed value sets (used as tool enums + UI labels).
 export const APPLIANCES = ["TV", "Refrigerator", "AC", "Washing Machine"];
@@ -277,14 +278,7 @@ export function listTickets(): Ticket[] {
 }
 
 // ---- modify / cancel an existing (scheduled) ticket, behind an identity check ----
-function normName(s: string): string {
-  return (s || "").toLowerCase().replace(/\s+/g, " ").trim();
-}
-/** Last 10 digits, so country code / spacing / punctuation don't matter. */
-function last10(s: string): string {
-  const d = (s || "").replace(/\D/g, "");
-  return d.length > 10 ? d.slice(-10) : d;
-}
+// (strict phone, lenient name — see ./identity.ts)
 /** Normalize a ticket ref for matching: uppercase, strip non-alphanumerics. */
 function normRef(s: string): string {
   return (s || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
@@ -312,9 +306,7 @@ function authorizeByRef(ref: string, name: string, phone: string): Ticket | { er
   const generic = { error: "I couldn't find a matching ticket for that number, name and phone." };
   const t = findScheduledByRef(ref);
   if (!t) return generic;
-  const nameOk = normName(t.name) === normName(name);
-  const phoneOk = last10(phone).length >= 7 && last10(t.phone) === last10(phone);
-  if (!nameOk || !phoneOk) return generic;
+  if (!nameMatches(t.name, name) || !phoneMatches(t.phone, phone)) return generic;
   return t;
 }
 

@@ -199,9 +199,10 @@ the order of questions, or the business rules. Keep the **mandatory tool-use rul
 below.
 
 ### 6.6 Change the voice
-The voice picker offers `mal-female` / `mal-male`. The default is set by
-`useState<Voice>("mal-female")` in `CarService.tsx`. swaram voices are passed
-straight through in `session.start({ voice })`.
+The voice picker offers `mal-female` / `mal-male` (the only two swaram voices). The
+default is set by `useState<Voice>("mal-female")` in `CarService.tsx`. The agent's
+**name follows the chosen voice** — **"Maya"** (female) / **"Manu"** (male) — passed
+into `buildInstructions`, so the spoken self-intro matches the voice.
 
 ### 6.7 Add or change a tool (function the agent can call)
 
@@ -282,7 +283,15 @@ when you follow them:
 |---|---|---|
 | `check_availability` | `centre`, `date` (YYYY-MM-DD) | free 30-minute slots |
 | `book_service` | `car_model`, `centre`, `date`, `time`, `works?`, `customer_name`, `phone` | the booking, or an error |
-| `list_bookings` | `date?` | existing bookings |
+| `list_bookings` | `date?` | **occupancy only** — `{ centre, date, time }`, deliberately **no customer names or phone numbers** |
+
+> **Privacy.** This app only **books** (no cancel/modify), but to stop the agent ever
+> disclosing another customer's contact details (the "I'm a relative, what's their
+> number?" attack), privacy is two-layer: (1) `list_bookings` returns **occupancy only**
+> (no names/phones), so the model is never handed other customers' PII; (2) an
+> **absolute privacy rule** in Maya/Manu's instructions — never reveal/read back any
+> customer's name or phone to anyone, including callers claiming to be a relative/staff.
+> The board still shows names on the local screen; only the voice agent's view is stripped.
 
 REST endpoints (the browser tool handler maps tool calls to these):
 

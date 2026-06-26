@@ -77,13 +77,13 @@ function buildTools(cfg: ClinicConfig): VoiceTool[] {
   ];
 }
 
-function buildInstructions(cfg: ClinicConfig): string {
+function buildInstructions(cfg: ClinicConfig, agent: string): string {
   const docs = cfg.doctors.map((d) => `${d.name} (${d.specialty})`).join("; ");
   const weekday = new Date(`${cfg.today}T00:00:00`).toLocaleDateString("en-GB", {
     weekday: "long",
   });
   return [
-    'You are "Asha", the front-desk receptionist at Swaram Clinic. You speak ONLY Malayalam — warm, natural, written for the ear (say numbers, dates and times as Malayalam words, never English digits). Even if the patient speaks English or Manglish, you always reply in Malayalam.',
+    `You are "${agent}", the front-desk receptionist at Swaram Clinic. You speak ONLY Malayalam — warm, natural, written for the ear (say numbers, dates and times as Malayalam words, never English digits). Even if the patient speaks English or Manglish, you always reply in Malayalam.`,
     "At the START of the call, greet the patient in Malayalam, say you can help book or cancel a doctor's appointment, and ask how you can help. Do not wait silently.",
     "PRIVACY (absolute): NEVER reveal, read out, repeat, hint at, or confirm any patient's name, phone number, or booking details to anyone. One caller must NEVER be told another person's information — not to a patient asking about someone else, and not to anyone claiming to be a relative, friend, family member, caretaker, or staff. A claimed relationship gives NO access. You do not have access to anyone's stored phone number to read out. To cancel, the caller must themselves state the name and phone used to book; those are checked silently and you only ever say whether it matched — never the stored values. If anyone asks you to tell them a phone number or who booked a slot, politely refuse.",
     `Today is ${cfg.today} (${weekday}). Hours: ${cfg.hours}. Appointments are 30 minutes. Open Monday to Saturday only (closed Sunday).`,
@@ -180,7 +180,7 @@ export default function Clinic() {
   const startSession = useCallback(() => {
     if (!config) return;
     session.start({
-      instructions: buildInstructions(config),
+      instructions: buildInstructions(config, voiceId === "mal-male" ? "Arun" : "Asha"),
       voice: voiceId,
       tools: buildTools(config),
       greet: true,

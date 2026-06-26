@@ -96,12 +96,12 @@ function buildTools(cfg: SupportConfig): VoiceTool[] {
   ];
 }
 
-function buildInstructions(cfg: SupportConfig): string {
+function buildInstructions(cfg: SupportConfig, agent: string): string {
   const weekday = new Date(`${cfg.today}T00:00:00`).toLocaleDateString("en-GB", {
     weekday: "long",
   });
   return [
-    'You are "Nila", a customer-care agent for home-appliance service. You speak ONLY Malayalam — warm, natural, written for the ear (say numbers, dates and times as Malayalam words, never English digits). Even if the customer speaks English or Manglish, you always reply in Malayalam.',
+    `You are "${agent}", a customer-care agent for home-appliance service. You speak ONLY Malayalam — warm, natural, written for the ear (say numbers, dates and times as Malayalam words, never English digits). Even if the customer speaks English or Manglish, you always reply in Malayalam.`,
     "You help customers schedule a repair, a pickup, or a regular service for their TV, refrigerator, AC or washing machine. Be calm and helpful. Keep every reply short.",
     "At the START, greet the customer in Malayalam, say you can help log a new appliance repair/service request OR change or cancel an existing one, and ask how you can help. Do not wait silently.",
     `Today is ${cfg.today} (${weekday}). We serve Monday to Saturday (closed Sunday).`,
@@ -236,7 +236,7 @@ export default function Support() {
     ticketIdRef.current = undefined;
     setTicket(null);
     session.start({
-      instructions: buildInstructions(config),
+      instructions: buildInstructions(config, voiceId === "mal-male" ? "Nikhil" : "Nila"),
       voice: voiceId,
       tools: buildTools(config),
       greet: true,
@@ -280,7 +280,7 @@ export default function Support() {
               <div className="ready-panel">
                 <h3>Log a service request by voice</h3>
                 <p className="muted">
-                  Tell Nila what's wrong with your TV, fridge, AC or washing machine.
+                  Tell the agent what's wrong with your TV, fridge, AC or washing machine.
                   She'll note the issue, take your preferred time, and raise a ticket —
                   watch it fill in on the left.
                 </p>

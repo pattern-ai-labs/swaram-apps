@@ -107,6 +107,7 @@ clinic-appointments/
 │       ├── index.ts          # app entry: mounts the routes
 │       ├── config.ts         # reads .env (only needs SWARAM_API_KEY)
 │       ├── clinic.ts         # ★ DOMAIN: doctors, slots, working days, validation, storage
+│       ├── identity.ts       #   reusable: phoneMatches (strict) + nameMatches (lenient)
 │       └── routes/
 │           ├── clinic.ts     # ★ clinic REST endpoints
 │           ├── swaramToken.ts #   reusable: mints the browser token
@@ -176,9 +177,10 @@ bookable dates, and the booking steps. Rewrite it to change tone, the order of
 questions, or the business rules. Keep the **mandatory tool-use rules** below.
 
 ### 6.5 Change the voice
-The voice picker offers `mal-female` / `mal-male`. The default is set by
-`useState<Voice>("mal-female")` in `Clinic.tsx`. swaram voices are passed straight
-through in `session.start({ voice })`.
+The voice picker offers `mal-female` / `mal-male` (the only two swaram voices). The
+default is set by `useState<Voice>("mal-female")` in `Clinic.tsx`. The agent's **name
+follows the chosen voice** — **"Asha"** (female) / **"Arun"** (male) — passed into
+`buildInstructions`, so the spoken self-intro matches the voice.
 
 ### 6.6 Add or change a tool (function the agent can call)
 
@@ -286,12 +288,24 @@ REST endpoints (the browser tool handler maps tool calls to these):
 Cancellation must not let a caller drop someone else's appointment, or fish for a
 stranger's contact details. Two safeguards, in two layers:
 
-- **Identity check (server, `cancel()` in `clinic.ts`).** To cancel the booking at a
-  given `doctor + date + time`, the caller must supply the **name and phone used to
-  book**, and both must match: the name case/space-insensitively, the phone on its
-  **last 10 digits** (so country code and spacing don't matter). On any mismatch the
-  server refuses **without revealing** the stored values. Asha asks for these as the
-  identity check before calling `cancel_appointment`.
+- **Identity check (server, `cancel()` in `clinic.ts`, via the shared `identity.ts`).**
+  To cancel the booking at a given `doctor + date + time`, the caller must supply the
+  **name and phone used to book**, and both must match — but the check is
+  **strict on phone, lenient on name**:
+  - **Phone — strict:** ≥7 digits and the **last 10** must equal the stored number's
+    (country code / spacing don't matter, but the digits must be right). This is the
+    strong factor.
+  - **Name — lenient:** after Unicode-NFC + lowercase + whitespace normalization, it
+    matches if the names are **equal**, **one contains the other** (first-name vs full
+    name), or within a small **edit distance** (~1 per 3 chars). *Why lenient:*
+    Malayalam speech-to-text returns different Unicode spellings of the same spoken
+    name across calls (`ധ`↔`ദ`, a dropped chillu `ർ`, conjunct variants), so an exact
+    name match would lock the real owner out of their own booking. Don't transliterate
+    names to English to compare — that's lossy and the variance just becomes different
+    romanizations.
+
+  On any mismatch the server refuses **without revealing** the stored values. Asha asks
+  for the name + phone as the identity check before calling `cancel_appointment`.
 - **No PII reaches the agent (data + prompt).** `list_bookings` returns **occupancy
   only** (`doctor, date, time`) — never names or phones — so the model has nothing to
   leak even if asked. On top of that, the persona has an **absolute privacy rule**:

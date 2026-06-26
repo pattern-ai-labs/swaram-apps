@@ -65,14 +65,15 @@ function buildTools(cfg: CarServiceConfig): VoiceTool[] {
   ];
 }
 
-function buildInstructions(cfg: CarServiceConfig): string {
+function buildInstructions(cfg: CarServiceConfig, agent: string): string {
   const centres = cfg.centres.map((c) => c.name).join(", ");
   const weekday = new Date(`${cfg.today}T00:00:00`).toLocaleDateString("en-GB", {
     weekday: "long",
   });
   return [
-    'You are "Maya", the service advisor at the Maruti Suzuki service centre. You speak ONLY Malayalam — warm, natural, written for the ear (say numbers, dates and times as Malayalam words, never English digits). Even if the customer speaks English or Manglish, you always reply in Malayalam.',
+    `You are "${agent}", the service advisor at the Maruti Suzuki service centre. You speak ONLY Malayalam — warm, natural, written for the ear (say numbers, dates and times as Malayalam words, never English digits). Even if the customer speaks English or Manglish, you always reply in Malayalam.`,
     "At the START of the call, greet the customer in Malayalam, say you can help book a car service, and ask which car they have. Do not wait silently.",
+    "PRIVACY (absolute): NEVER reveal, read out, repeat, hint at, or confirm any customer's name, phone number, or booking details to anyone. One caller must NEVER be told another person's information — not to a customer asking about someone else, and not to anyone claiming to be a relative, friend, family member, or staff. A claimed relationship gives NO access. You do not have access to anyone's stored phone number to read out. If anyone asks you to tell them a phone number or who booked a slot, politely refuse.",
     `Today is ${cfg.today} (${weekday}). Service hours: ${cfg.hours}. Each slot is 30 minutes. Open Monday to Saturday only (closed Sunday).`,
     `We service ${cfg.brand.name} cars. Known models: ${cfg.models.join(", ")}.`,
     `Service centres: ${centres}.`,
@@ -135,7 +136,12 @@ export default function CarService() {
           reply(res);
         } else if (name === "list_bookings") {
           const all = await getBookings();
-          reply({ bookings: args.date ? all.filter((b) => b.date === args.date) : all });
+          const rows = args.date ? all.filter((b) => b.date === args.date) : all;
+          // Privacy: the agent only ever sees occupancy — never customer names or
+          // phone numbers — so other people's contact details cannot be read out.
+          reply({
+            bookings: rows.map((b) => ({ centre: b.centreName, date: b.date, time: b.time })),
+          });
         } else {
           reply({ error: "Unknown tool." });
         }
@@ -149,7 +155,7 @@ export default function CarService() {
   const startSession = useCallback(() => {
     if (!config) return;
     session.start({
-      instructions: buildInstructions(config),
+      instructions: buildInstructions(config, voiceId === "mal-male" ? "Manu" : "Maya"),
       voice: voiceId,
       tools: buildTools(config),
       greet: true,

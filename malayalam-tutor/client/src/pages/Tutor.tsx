@@ -12,10 +12,10 @@ import ConversationPane from "../components/ConversationPane";
 type Phase = "upload" | "processing" | "ready" | "live" | "ended";
 const MODEL = "mal-realtime-simple";
 
-function buildInstructions(b: StudyBrief): string {
+function buildInstructions(b: StudyBrief, agent: string): string {
   const kp = b.keyPoints.map((p) => "- " + p).join("\n");
   return [
-    'You are a warm, patient Malayalam tutor named "Guru".',
+    `You are a warm, patient Malayalam tutor named "${agent}".`,
     "Teach the learner ONLY from the lesson material below.",
     "You can both EXPLAIN concepts and QUIZ the learner.",
     "Greet them in Malayalam, ask whether they want an explanation or a quiz, and switch whenever they ask.",
@@ -231,7 +231,7 @@ export default function Tutor() {
       session.connect({
         token,
         model: MODEL,
-        instructions: buildInstructions(brief),
+        instructions: buildInstructions(brief, voice === "mal-male" ? "Govind" : "Gita"),
         voice,
       });
 
@@ -294,18 +294,7 @@ export default function Tutor() {
     tutorSpeakingRef.current = false;
   }, [clearDrainTimer]);
 
-  // Press Space to interrupt while the tutor is speaking.
-  useEffect(() => {
-    if (phase !== "live") return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.code === "Space" && tutorSpeakingRef.current) {
-        e.preventDefault();
-        interrupt();
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [phase, interrupt]);
+  // (Space-to-interrupt is handled centrally in ConversationPane.)
 
   const restart = useCallback(() => {
     setMessages([]);

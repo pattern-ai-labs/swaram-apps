@@ -230,9 +230,10 @@ booking steps. Rewrite it to change tone, the questions, or the business rules. 
 the **mandatory tool-use rules** below.
 
 ### 6.5 Change the voice
-The voice picker offers `mal-female` / `mal-male`. The default is set by
-`useState<Voice>("mal-female")` in `TestDrive.tsx`. swaram voices are passed straight
-through in `session.start({ voice })`.
+The voice picker offers `mal-female` / `mal-male` (the only two swaram voices). The
+default is set by `useState<Voice>("mal-female")` in `TestDrive.tsx`. The agent's
+**name follows the chosen voice** — **"Diya"** (female) / **"Dev"** (male) — passed
+into `buildInstructions`, so the spoken self-intro matches the voice.
 
 ### 6.6 Add or change a tool (function the agent can call)
 

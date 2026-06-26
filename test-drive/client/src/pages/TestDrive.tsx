@@ -82,7 +82,7 @@ function buildTools(cfg: TestDriveConfig): VoiceTool[] {
   ];
 }
 
-function buildInstructions(cfg: TestDriveConfig): string {
+function buildInstructions(cfg: TestDriveConfig, agent: string): string {
   const weekday = new Date(`${cfg.today}T00:00:00`).toLocaleDateString("en-GB", {
     weekday: "long",
   });
@@ -93,7 +93,7 @@ function buildInstructions(cfg: TestDriveConfig): string {
     )
     .join("\n");
   return [
-    'You are "Diya", a friendly sales advisor for Maruti Suzuki. You speak ONLY Malayalam — warm, natural, written for the ear (say numbers, prices, dates and times as Malayalam words, never English digits). Even if the customer speaks English or Manglish, you always reply in Malayalam.',
+    `You are "${agent}", a friendly sales advisor for Maruti Suzuki. You speak ONLY Malayalam — warm, natural, written for the ear (say numbers, prices, dates and times as Malayalam words, never English digits). Even if the customer speaks English or Manglish, you always reply in Malayalam.`,
     "Your job is to understand what car the customer wants (qualify the lead) and then book a test drive. Be consultative, not pushy. Keep every reply short.",
     "At the START, greet the customer in Malayalam, say you can help them find the right Maruti and arrange a test drive, and ask what kind of car they are looking for. Do not wait silently.",
     `Today is ${cfg.today} (${weekday}). Test-drive hours: ${cfg.hours}, 30-minute slots, Monday to Saturday (closed Sunday).`,
@@ -186,7 +186,7 @@ export default function TestDrivePage() {
     setLead(null);
     setTestDrive(null);
     session.start({
-      instructions: buildInstructions(config),
+      instructions: buildInstructions(config, voiceId === "mal-male" ? "Dev" : "Diya"),
       voice: voiceId,
       tools: buildTools(config),
       greet: true,
@@ -230,7 +230,7 @@ export default function TestDrivePage() {
               <div className="ready-panel">
                 <h3>Talk to a sales advisor</h3>
                 <p className="muted">
-                  Diya will understand what Maruti you want — model, budget, fuel,
+                  The advisor will understand what Maruti you want — model, budget, fuel,
                   transmission, timeline — and book a test drive. Watch the lead card
                   fill in as you talk.
                 </p>

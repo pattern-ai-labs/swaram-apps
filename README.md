@@ -70,6 +70,12 @@ conventions — this is what makes the voice agent reliable.
 React + Vite + TypeScript (client) · Node + Express + TypeScript (server) · swaram.live
 realtime voice · Amazon Bedrock (tutor only).
 
+## Releases
+
+Current: **v1.0.0** (initial release). See **[CHANGELOG.md](./CHANGELOG.md)** for what's
+in each version, and the [Releases](https://github.com/pattern-ai-labs/swaram-apps/releases)
+page for tagged downloads.
+
 ## License
 
 [MIT](./LICENSE) © Pattern AI Labs. These are example/starter apps — build freely on them.

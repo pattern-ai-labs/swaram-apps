@@ -320,21 +320,18 @@ a { color: inherit; }
 .spinner { width: 32px; height: 32px; border: 2.5px solid var(--line-2); border-top-color: var(--gold); border-radius: 50%; animation: spin 0.8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* Stack the two panes on narrow screens OR short ones (phones in landscape are
-   wide but short, so a width-only breakpoint misses them). */
+/* Phones (narrow) and very short (landscape) viewports: the fixed-height two-pane
+   layout has no room for the conversation, so its bubbles get crushed together.
+   On these screens we STACK the panes and let the whole PAGE scroll instead of
+   nesting a scroll container inside a fragile grid+flex height chain. With the
+   height lock released, the bubbles are ordinary in-flow blocks separated by a
+   gap — they can never overlap, and it's immune to the mobile URL-bar viewport
+   quirks. (Trade-off: the mic/Interrupt bar scrolls with the page.) */
 @media (max-width: 840px), (max-height: 560px) {
-  .split { grid-template-columns: 1fr; }
-  .lesson-pane { border-right: 0; border-bottom: 1px solid var(--line); max-height: 44vh; }
-}
-
-/* Very short viewports (landscape phones): the fixed-height layout leaves the
-   conversation no room, which crushes the bubbles together. Release the height
-   lock and let the whole page scroll, and give each pane real height — the
-   bubbles then stay in normal flow and can never overlap. */
-@media (max-height: 560px) {
   .tutor { height: auto; min-height: 100%; }
-  .lesson-pane { max-height: 50vh; }
-  .conv-pane { min-height: 78vh; }
+  .split { grid-template-columns: 1fr; }
+  .lesson-pane { border-right: 0; border-bottom: 1px solid var(--line); max-height: 50vh; }
+  .conv-pane { min-height: 70vh; }
   .conv-log { overflow: visible; }
 }
 

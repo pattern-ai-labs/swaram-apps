@@ -148,6 +148,7 @@ appliance-support/
 │       ├── index.ts          # app entry: mounts the routes
 │       ├── config.ts         # reads .env (only needs SWARAM_API_KEY)
 │       ├── support.ts        # ★ DOMAIN: enums, working days, ticket merge/validate/storage
+│       ├── identity.ts       #   reusable: phoneMatches (strict) + nameMatches (lenient)
 │       └── routes/
 │           ├── support.ts    # ★ support REST endpoints
 │           ├── swaramToken.ts #   reusable: mints the browser token
@@ -235,9 +236,10 @@ business rules. Keep the **mandatory tool-use rules** below.
 
 ### 6.4 Change the voice
 
-The voice picker offers `mal-female` / `mal-male`. The default is set by
-`useState<Voice>("mal-female")` in `Support.tsx`. swaram voices are passed straight
-through in `session.start({ voice })`.
+The voice picker offers `mal-female` / `mal-male` (the only two swaram voices). The
+default is set by `useState<Voice>("mal-female")` in `Support.tsx`. The agent's **name
+follows the chosen voice** — **"Nila"** (female) / **"Nikhil"** (male) — passed into
+`buildInstructions`, so the spoken self-intro matches the voice.
 
 ### 6.5 Add or change a tool (function the agent can call)
 
@@ -347,10 +349,19 @@ A caller can **change** (`update_ticket`) or **cancel** (`cancel_ticket`) a tick
 they booked. Both are gated so a caller can't touch someone else's ticket or fish
 for contact details:
 
-- **Identity check (server, `support.ts`).** Locate the ticket by its **ref**
-  (`SR0007` — normalized, so `sr0007`/digits also match), then the supplied
-  `customer_name` (case/space-insensitive) **and** `phone` (last 10 digits) must both
-  match. `cancel_ticket` marks it `Cancelled` (kept for audit, dropped from the queue).
+- **Identity check (server, `support.ts` via the shared `identity.ts`).** Locate the
+  ticket by its **ref** (`SR0007` — normalized, so `sr0007`/digits also match), then
+  the supplied `customer_name` **and** `phone` must both match — **strict on phone,
+  lenient on name**:
+  - **Phone — strict:** ≥7 digits and the **last 10** must equal the stored number's
+    (the strong factor).
+  - **Name — lenient:** after Unicode-NFC + lowercase + whitespace normalization,
+    matches if **equal**, **one contains the other**, or within a small **edit
+    distance** (~1 per 3 chars). *Why:* Malayalam speech-to-text spells the same spoken
+    name differently across calls (`ധ`↔`ദ`, dropped chillu `ർ`, conjunct variants), so
+    an exact match would lock real owners out. (No transliteration to English.)
+
+  `cancel_ticket` marks the ticket `Cancelled` (kept for audit, dropped from the queue).
 - **One generic refusal.** "No such ticket" and "details don't match" return the
   **same** message — so a caller can't probe which refs exist or whose they are.
 - **Never reads out numbers.** Nila asks for name + phone, verifies **silently**,

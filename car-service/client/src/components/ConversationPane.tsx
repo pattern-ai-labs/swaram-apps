@@ -32,6 +32,19 @@ export default function ConversationPane({
     logRef.current?.scrollTo({ top: logRef.current.scrollHeight });
   }, [messages]);
 
+  // Space interrupts the agent while it's speaking (half-duplex; the mic is held,
+  // so Space / the Interrupt button are how the user cuts in).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.code === "Space" && tutorSpeaking) {
+        e.preventDefault();
+        onInterrupt();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [tutorSpeaking, onInterrupt]);
+
   return (
     <div className="conv-pane">
       <div className="conv-head">
@@ -82,7 +95,7 @@ export default function ConversationPane({
         </span>
         <span className="spacer" />
         {tutorSpeaking && (
-          <button className="interrupt" onClick={onInterrupt} title="Stop the tutor (Space)">
+          <button className="interrupt" onClick={onInterrupt} title="Stop the agent (Space)">
             ✋ Interrupt
           </button>
         )}

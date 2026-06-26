@@ -1,6 +1,7 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { randomUUID } from "node:crypto";
+import { nameMatches, phoneMatches } from "./identity.js";
 
 export interface Doctor {
   id: string;
@@ -215,16 +216,7 @@ export function book(input: BookInput) {
   return { ok: true as const, booking, doctor };
 }
 
-// ---- cancellation (with a name + phone identity check) ----
-function normName(s: string): string {
-  return (s || "").toLowerCase().replace(/\s+/g, " ").trim();
-}
-/** Last 10 digits, so country code / spacing / punctuation don't matter. */
-function last10(s: string): string {
-  const d = (s || "").replace(/\D/g, "");
-  return d.length > 10 ? d.slice(-10) : d;
-}
-
+// ---- cancellation (with a name + phone identity check: strict phone, lenient name) ----
 export interface CancelInput {
   doctor: string;
   date: string;
@@ -251,8 +243,8 @@ export function cancel(input: CancelInput) {
   }
 
   const b = bookings[idx];
-  const nameOk = normName(b.name) === normName(input.name);
-  const phoneOk = last10(input.phone).length >= 7 && last10(b.phone) === last10(input.phone);
+  const nameOk = nameMatches(b.name, input.name);
+  const phoneOk = phoneMatches(b.phone, input.phone);
   if (!nameOk || !phoneOk) {
     // Do not disclose the stored name/phone — just refuse.
     return {
