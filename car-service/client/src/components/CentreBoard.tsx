@@ -46,9 +46,7 @@ export default function CentreBoard({
                     {b ? (
                       <span
                         className="who"
-                        title={`${b.carModel} · ${b.name} · ${b.phone}${
-                          b.works ? ` · ${b.works}` : ""
-                        }`}
+                        title={`${b.carModel} · ${b.name}${b.works ? ` · ${b.works}` : ""}`}
                       >
                         {b.carModel} · {firstName(b.name)}
                       </span>

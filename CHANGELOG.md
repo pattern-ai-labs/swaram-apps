@@ -4,6 +4,14 @@ All notable changes to **swaram-apps** are documented here. The format is based 
 [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.0.3] — 2026-06-26
+
+### Changed
+- **car-service** and **test-drive** — the on-screen booking boards no longer reveal the
+  customer's **phone number** on hover (matching the clinic board). The tooltip now shows
+  the model and name only (car-service also keeps the work note); the voice agent's view
+  was already occupancy-only.
+
 ## [1.0.2] — 2026-06-26
 
 ### Added
@@ -70,6 +78,7 @@ uses Amazon Bedrock).
 - Each app carries its own copy of the reusable **voice kit** — to build a new agent,
   swap the domain and keep the pipeline.
 
+[1.0.3]: https://github.com/pattern-ai-labs/swaram-apps/releases/tag/v1.0.3
 [1.0.2]: https://github.com/pattern-ai-labs/swaram-apps/releases/tag/v1.0.2
 [1.0.1]: https://github.com/pattern-ai-labs/swaram-apps/releases/tag/v1.0.1
 [1.0.0]: https://github.com/pattern-ai-labs/swaram-apps/releases/tag/v1.0.0

@@ -47,7 +47,7 @@ export default function DealershipBoard({
                   <div key={t} className={`slot ${b ? "booked" : "free"}`}>
                     <span className="t">{t}</span>
                     {b ? (
-                      <span className="who" title={`${b.carModel} · ${b.name} · ${b.phone}`}>
+                      <span className="who" title={`${b.carModel} · ${b.name}`}>
                         {b.carModel} · {firstName(b.name)}
                       </span>
                     ) : (
