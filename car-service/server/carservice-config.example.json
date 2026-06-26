@@ -1,0 +1,284 @@
+{
+  "windowDays": 7,
+  "slotMinutes": 30,
+  "workingDays": [
+    "Mon",
+    "Tue",
+    "Wed",
+    "Thu",
+    "Fri",
+    "Sat"
+  ],
+  "hours": [
+    [
+      "09:00",
+      "13:00"
+    ],
+    [
+      "14:00",
+      "17:00"
+    ]
+  ],
+  "brand": {
+    "id": "maruti",
+    "name": "Maruti Suzuki"
+  },
+  "centres": [
+    {
+      "id": "kakkanad",
+      "name": "Kakkanad",
+      "area": "Kakkanad"
+    },
+    {
+      "id": "thripunithura",
+      "name": "Thripunithura",
+      "area": "Thripunithura"
+    },
+    {
+      "id": "edapally",
+      "name": "Edapally",
+      "area": "Edapally"
+    },
+    {
+      "id": "ernakulam",
+      "name": "Ernakulam",
+      "area": "Ernakulam (M.G. Road)"
+    }
+  ],
+  "models": [
+    {
+      "name": "Alto K10",
+      "bodyType": "Hatchback",
+      "fuel": [
+        "Petrol",
+        "CNG"
+      ],
+      "transmission": [
+        "Manual",
+        "Automatic"
+      ],
+      "priceBand": "₹4–6 lakh",
+      "seats": 5
+    },
+    {
+      "name": "S-Presso",
+      "bodyType": "Hatchback",
+      "fuel": [
+        "Petrol",
+        "CNG"
+      ],
+      "transmission": [
+        "Manual",
+        "Automatic"
+      ],
+      "priceBand": "₹4–6.5 lakh",
+      "seats": 5
+    },
+    {
+      "name": "Celerio",
+      "bodyType": "Hatchback",
+      "fuel": [
+        "Petrol",
+        "CNG"
+      ],
+      "transmission": [
+        "Manual",
+        "Automatic"
+      ],
+      "priceBand": "₹5.5–7 lakh",
+      "seats": 5
+    },
+    {
+      "name": "WagonR",
+      "bodyType": "Hatchback",
+      "fuel": [
+        "Petrol",
+        "CNG"
+      ],
+      "transmission": [
+        "Manual",
+        "Automatic"
+      ],
+      "priceBand": "₹5.5–8 lakh",
+      "seats": 5
+    },
+    {
+      "name": "Swift",
+      "bodyType": "Hatchback",
+      "fuel": [
+        "Petrol",
+        "CNG"
+      ],
+      "transmission": [
+        "Manual",
+        "Automatic"
+      ],
+      "priceBand": "₹6.5–9.5 lakh",
+      "seats": 5
+    },
+    {
+      "name": "Dzire",
+      "bodyType": "Sedan",
+      "fuel": [
+        "Petrol",
+        "CNG"
+      ],
+      "transmission": [
+        "Manual",
+        "Automatic"
+      ],
+      "priceBand": "₹6.5–10 lakh",
+      "seats": 5
+    },
+    {
+      "name": "Baleno",
+      "bodyType": "Hatchback",
+      "fuel": [
+        "Petrol",
+        "CNG"
+      ],
+      "transmission": [
+        "Manual",
+        "Automatic"
+      ],
+      "priceBand": "₹6.5–10 lakh",
+      "seats": 5
+    },
+    {
+      "name": "Ignis",
+      "bodyType": "Hatchback",
+      "fuel": [
+        "Petrol"
+      ],
+      "transmission": [
+        "Manual",
+        "Automatic"
+      ],
+      "priceBand": "₹6–8.5 lakh",
+      "seats": 5
+    },
+    {
+      "name": "Fronx",
+      "bodyType": "SUV",
+      "fuel": [
+        "Petrol",
+        "CNG"
+      ],
+      "transmission": [
+        "Manual",
+        "Automatic"
+      ],
+      "priceBand": "₹7.5–13 lakh",
+      "seats": 5
+    },
+    {
+      "name": "Brezza",
+      "bodyType": "SUV",
+      "fuel": [
+        "Petrol",
+        "CNG"
+      ],
+      "transmission": [
+        "Manual",
+        "Automatic"
+      ],
+      "priceBand": "₹8.5–14 lakh",
+      "seats": 5
+    },
+    {
+      "name": "Ertiga",
+      "bodyType": "MPV",
+      "fuel": [
+        "Petrol",
+        "CNG"
+      ],
+      "transmission": [
+        "Manual",
+        "Automatic"
+      ],
+      "priceBand": "₹8.5–13.5 lakh",
+      "seats": 7
+    },
+    {
+      "name": "XL6",
+      "bodyType": "MPV",
+      "fuel": [
+        "Petrol",
+        "CNG"
+      ],
+      "transmission": [
+        "Manual",
+        "Automatic"
+      ],
+      "priceBand": "₹11.5–15 lakh",
+      "seats": 6
+    },
+    {
+      "name": "Ciaz",
+      "bodyType": "Sedan",
+      "fuel": [
+        "Petrol"
+      ],
+      "transmission": [
+        "Manual",
+        "Automatic"
+      ],
+      "priceBand": "₹9.5–12.5 lakh",
+      "seats": 5
+    },
+    {
+      "name": "Grand Vitara",
+      "bodyType": "SUV",
+      "fuel": [
+        "Petrol",
+        "CNG",
+        "Hybrid"
+      ],
+      "transmission": [
+        "Manual",
+        "Automatic"
+      ],
+      "priceBand": "₹11–20 lakh",
+      "seats": 5
+    },
+    {
+      "name": "Jimny",
+      "bodyType": "SUV",
+      "fuel": [
+        "Petrol"
+      ],
+      "transmission": [
+        "Manual",
+        "Automatic"
+      ],
+      "priceBand": "₹12.5–15 lakh",
+      "seats": 4
+    },
+    {
+      "name": "Eeco",
+      "bodyType": "Van",
+      "fuel": [
+        "Petrol",
+        "CNG"
+      ],
+      "transmission": [
+        "Manual"
+      ],
+      "priceBand": "₹5.5–6.5 lakh",
+      "seats": 5
+    },
+    {
+      "name": "Invicto",
+      "bodyType": "MPV",
+      "fuel": [
+        "Petrol",
+        "Hybrid"
+      ],
+      "transmission": [
+        "Automatic"
+      ],
+      "priceBand": "₹25–29 lakh",
+      "seats": 7
+    }
+  ]
+}

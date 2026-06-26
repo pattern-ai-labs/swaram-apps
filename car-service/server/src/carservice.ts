@@ -1,13 +1,26 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { randomUUID } from "node:crypto";
-import { BRANDS, activeBrand, modelNames } from "./carCatalog.js";
+import { activeBrand, type CarModel } from "./carCatalog.js";
 
 export interface Centre {
   id: string;
   name: string; // display name, e.g. "Kakkanad"
   area: string; // full area label
 }
+
+/** Operator-editable car-service configuration (see carservice-config.json). */
+export interface CarServiceConfigFile {
+  windowDays: number;
+  slotMinutes: number;
+  workingDays: string[]; // e.g. ["Mon",…,"Sat"]
+  hours: [string, string][]; // e.g. [["09:00","13:00"],["14:00","17:00"]]
+  brand: { id: string; name: string };
+  centres: Centre[];
+  models: CarModel[];
+}
+
+const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
 
 export interface ServiceBooking {
   id: string;
@@ -21,30 +34,43 @@ export interface ServiceBooking {
   createdAt: string;
 }
 
-// Maruti service centres around Kochi.
-export const CENTRES: Centre[] = [
-  { id: "kakkanad", name: "Kakkanad", area: "Kakkanad" },
-  { id: "thripunithura", name: "Thripunithura", area: "Thripunithura" },
-  { id: "edapally", name: "Edapally", area: "Edapally" },
-  { id: "ernakulam", name: "Ernakulam", area: "Ernakulam (M.G. Road)" },
-];
+/** Built-in defaults; written to carservice-config.json on first run, then editable.
+ *  Centres + hours + the serviceable model list all come from here. */
+const DEFAULT_CONFIG: CarServiceConfigFile = {
+  windowDays: 7,
+  slotMinutes: 30,
+  workingDays: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+  hours: [["09:00", "13:00"], ["14:00", "17:00"]],
+  brand: { id: activeBrand().id, name: activeBrand().name },
+  centres: [
+    { id: "kakkanad", name: "Kakkanad", area: "Kakkanad" },
+    { id: "thripunithura", name: "Thripunithura", area: "Thripunithura" },
+    { id: "edapally", name: "Edapally", area: "Edapally" },
+    { id: "ernakulam", name: "Ernakulam", area: "Ernakulam (M.G. Road)" },
+  ],
+  models: activeBrand().models,
+};
 
-const HOURS: [string, string][] = [
-  ["09:00", "13:00"],
-  ["14:00", "17:00"],
-];
-const WINDOW_DAYS = 7; // calendar days from today (Sundays skipped)
+let config: CarServiceConfigFile = DEFAULT_CONFIG;
 
-/** All 30-minute slot start times for a day. */
+/** Service centres from the live (operator-editable) config. A live `let` binding. */
+export let CENTRES: Centre[] = config.centres;
+
+/** Serviceable model names from config. */
+export function modelNames(): string[] {
+  return config.models.map((m) => m.name);
+}
+
+/** 30-minute slot starts within a set of [start,end] windows. */
 export function slotTimes(): string[] {
   const out: string[] = [];
-  for (const [start, end] of HOURS) {
+  for (const [start, end] of config.hours) {
     let [h, m] = start.split(":").map(Number);
     const [eh, em] = end.split(":").map(Number);
     while (h < eh || (h === eh && m < em)) {
       out.push(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`);
-      m += 30;
-      if (m >= 60) {
+      m += config.slotMinutes;
+      while (m >= 60) {
         m -= 60;
         h += 1;
       }
@@ -64,13 +90,14 @@ export interface Day {
   label: string; // e.g. "Tue 24 Jun"
 }
 
-/** Working days (Mon–Sat) within the next WINDOW_DAYS calendar days. */
+/** Working days within the window: dates whose weekday is in config.workingDays. */
 export function workingDays(): Day[] {
   const days: Day[] = [];
+  const open = new Set(config.workingDays);
   const today = new Date();
-  for (let i = 0; i < WINDOW_DAYS; i++) {
+  for (let i = 0; i < config.windowDays; i++) {
     const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() + i);
-    if (d.getDay() === 0) continue; // skip Sunday
+    if (!open.has(WEEKDAYS[d.getDay()])) continue;
     days.push({
       date: fmt(d),
       label: d.toLocaleDateString("en-GB", {
@@ -81,6 +108,22 @@ export function workingDays(): Day[] {
     });
   }
   return days;
+}
+
+/** "Mon–Sat" when contiguous, else "Mon, Wed, Fri". */
+export function daysLabel(): string {
+  const idx = config.workingDays
+    .map((w) => (WEEKDAYS as readonly string[]).indexOf(w))
+    .sort((a, b) => a - b);
+  const contiguous = idx.every((n, i) => i === 0 || n === idx[i - 1] + 1);
+  if (contiguous && idx.length > 2) return `${WEEKDAYS[idx[0]]}–${WEEKDAYS[idx[idx.length - 1]]}`;
+  return idx.map((n) => WEEKDAYS[n]).join(", ");
+}
+
+/** "9:00–13:00, 14:00–17:00" from the configured hour windows. */
+export function hoursLabel(): string {
+  const trim = (t: string) => t.replace(/^0/, "");
+  return config.hours.map(([s, e]) => `${trim(s)}–${trim(e)}`).join(", ");
 }
 
 export function today(): string {
@@ -104,7 +147,7 @@ export function resolveCentre(input: string): Centre | null {
   );
 }
 
-/** Best-effort match of a spoken model to the active brand's catalogue. */
+/** Best-effort match of a spoken model to the configured model list. */
 export function resolveModel(input: string): string | null {
   if (!input) return null;
   const q = input.toLowerCase().trim();
@@ -120,11 +163,41 @@ export function resolveModel(input: string): string | null {
 // ---- persistence ----
 const DATA_DIR = fileURLToPath(new URL("../data/", import.meta.url));
 const FILE = fileURLToPath(new URL("../data/service-bookings.json", import.meta.url));
+const CONFIG_FILE = fileURLToPath(new URL("../data/carservice-config.json", import.meta.url));
 let bookings: ServiceBooking[] = [];
 
 function save(): void {
   if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
   writeFileSync(FILE, JSON.stringify(bookings, null, 2));
+}
+
+/** Load the operator-editable config (centres, hours, models). On first run it writes
+ *  the defaults to carservice-config.json; edit that file and restart to change it. */
+export function loadConfig(): void {
+  if (existsSync(CONFIG_FILE)) {
+    try {
+      const parsed = JSON.parse(readFileSync(CONFIG_FILE, "utf8")) as CarServiceConfigFile;
+      if (parsed?.centres?.length && parsed?.models?.length) {
+        config = {
+          windowDays: parsed.windowDays || DEFAULT_CONFIG.windowDays,
+          slotMinutes: parsed.slotMinutes || DEFAULT_CONFIG.slotMinutes,
+          workingDays: parsed.workingDays?.length ? parsed.workingDays : DEFAULT_CONFIG.workingDays,
+          hours: parsed.hours?.length ? parsed.hours : DEFAULT_CONFIG.hours,
+          brand: parsed.brand || DEFAULT_CONFIG.brand,
+          centres: parsed.centres,
+          models: parsed.models,
+        };
+        CENTRES = config.centres;
+        return;
+      }
+    } catch {
+      /* fall through to defaults */
+    }
+  }
+  config = DEFAULT_CONFIG;
+  CENTRES = config.centres;
+  if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
+  writeFileSync(CONFIG_FILE, JSON.stringify(DEFAULT_CONFIG, null, 2));
 }
 
 function seed(): ServiceBooking[] {
@@ -159,6 +232,7 @@ function seed(): ServiceBooking[] {
 }
 
 export function loadServiceBookings(): void {
+  loadConfig();
   if (existsSync(FILE)) {
     try {
       bookings = JSON.parse(readFileSync(FILE, "utf8"));
@@ -173,16 +247,15 @@ export function loadServiceBookings(): void {
 
 // ---- queries ----
 export function getConfig() {
-  const brand = activeBrand();
   return {
-    brand: { id: brand.id, name: brand.name },
+    brand: config.brand,
     models: modelNames(),
-    brands: BRANDS.map((b) => ({ id: b.id, name: b.name, models: b.models.map((m) => m.name) })),
     centres: CENTRES,
     slots: slotTimes(),
     days: workingDays(),
     today: today(),
-    hours: "9:00–13:00, 14:00–17:00",
+    hoursLabel: hoursLabel(),
+    daysLabel: daysLabel(),
   };
 }
 

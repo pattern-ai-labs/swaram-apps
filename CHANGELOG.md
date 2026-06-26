@@ -4,6 +4,19 @@ All notable changes to **swaram-apps** are documented here. The format is based 
 [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.0.4] — 2026-06-26
+
+### Added
+- **car-service** and **test-drive** — **editable config without code** (matching the
+  clinic in v1.0.2). The service centres / dealerships, working hours + days + booking
+  window, the car model line-up, and — for test-drive — the enrichment value sets
+  (budget / fuel / transmission / timeline) now live in an operator-editable
+  `server/data/<demo>-config.json`, seeded from defaults on first run (edit + restart to
+  apply). Each app ships a committed `*-config.example.json`, and the README documents
+  it. The board, day strip, slots, on-screen labels, tool enums, lead-card pills, and the
+  agent's spoken brand/hours/days all adapt to the config. (Tip: add a finer band like
+  `"Under ₹5 lakh"` to test-drive's `enrich.budget`.)
+
 ## [1.0.3] — 2026-06-26
 
 ### Changed
@@ -78,6 +91,7 @@ uses Amazon Bedrock).
 - Each app carries its own copy of the reusable **voice kit** — to build a new agent,
   swap the domain and keep the pipeline.
 
+[1.0.4]: https://github.com/pattern-ai-labs/swaram-apps/releases/tag/v1.0.4
 [1.0.3]: https://github.com/pattern-ai-labs/swaram-apps/releases/tag/v1.0.3
 [1.0.2]: https://github.com/pattern-ai-labs/swaram-apps/releases/tag/v1.0.2
 [1.0.1]: https://github.com/pattern-ai-labs/swaram-apps/releases/tag/v1.0.1

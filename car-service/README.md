@@ -102,11 +102,12 @@ car-service/
 ├── dev.sh                    # runs server + client together
 ├── server/                   # Express API (the source of truth)
 │   ├── .env.example          # your SWARAM_API_KEY goes here
+│   ├── carservice-config.example.json # ★ sample centres + hours + models (editable config)
 │   └── src/
 │       ├── index.ts          # app entry: mounts the routes
 │       ├── config.ts         # reads .env (only needs SWARAM_API_KEY)
-│       ├── carservice.ts     # ★ DOMAIN: centres, slots, working days, validation, storage
-│       ├── carCatalog.ts     # ★ DOMAIN: car brands + models catalogue
+│       ├── carservice.ts     # ★ DOMAIN: loads carservice-config.json, validation, storage
+│       ├── carCatalog.ts     #   default model catalogue (seeds the config file)
 │       └── routes/
 │           ├── carservice.ts # ★ car-service REST endpoints
 │           ├── swaramToken.ts #   reusable: mints the browser token
@@ -133,78 +134,67 @@ else is the reusable voice kit.
 
 ## 6. How to customize
 
-Almost everything you'll want to change is in **a few files**:
-`server/src/carservice.ts` (the data + rules), `server/src/carCatalog.ts` (the car
-models) and `client/src/pages/CarService.tsx` (the persona + tools).
+Most changes are in two places: **`server/data/carservice-config.json`** (centres,
+hours, working days, the serviceable models — see §6.1) and
+`client/src/pages/CarService.tsx` (the persona + tools).
 
-### 6.1 Change the service centres
-Edit the `CENTRES` array in `server/src/carservice.ts`:
-```ts
-export const CENTRES: Centre[] = [
-  { id: "kakkanad",      name: "Kakkanad",      area: "Kakkanad" },
-  { id: "thripunithura", name: "Thripunithura", area: "Thripunithura" },
-  { id: "edapally",      name: "Edapally",      area: "Edapally" },
-  // add one:
-  { id: "aluva",         name: "Aluva",         area: "Aluva (Bypass)" },
-];
+### 6.1 Change centres, hours, working days, and models (no code)
+The service centres, working hours/days, booking window, and the serviceable model
+list all live in an **editable config file**, not in code. On first run the server
+writes `server/data/carservice-config.json` from the built-in defaults; edit that
+file and **restart** the server to change anything. A committed copy of the defaults
+lives at **[`server/carservice-config.example.json`](./server/carservice-config.example.json)**
+for reference (you can also `cp server/carservice-config.example.json server/data/carservice-config.json`
+to start from it).
+
+```jsonc
+{
+  "windowDays": 7,         // how many days ahead are bookable
+  "slotMinutes": 30,       // slot length
+  "workingDays": ["Mon","Tue","Wed","Thu","Fri","Sat"],   // a date is bookable if its weekday is here
+  "hours": [["09:00","13:00"], ["14:00","17:00"]],         // one or more [start,end] windows
+  "brand": { "id": "maruti", "name": "Maruti Suzuki" },
+  "centres": [
+    { "id": "kakkanad", "name": "Kakkanad", "area": "Kakkanad" }   // id must be unique + stable (bookings reference it)
+    // add / remove centres here…
+  ],
+  "models": [
+    { "name": "Swift", "bodyType": "Hatchback", "fuel": ["Petrol","CNG"],
+      "transmission": ["Manual","Automatic"], "priceBand": "₹6.5–9.5 lakh", "seats": 5 }
+    // add / remove models here…
+  ]
+}
 ```
-`id` must be unique and stable (bookings reference it). That's it — the board, the
-availability logic, and the tool's `centre` enum all read from this list
-automatically.
 
-### 6.2 Change the car models (the catalogue)
-Edit the brand/model catalogue in `server/src/carCatalog.ts`. The active brand's
-model names become the `car_model` enum and what Maya reads back:
-```ts
-export const BRANDS: Brand[] = [
-  {
-    id: "maruti",
-    name: "Maruti Suzuki",
-    models: [
-      { name: "Swift",  bodyType: "Hatchback", fuel: ["Petrol", "CNG"], transmission: ["Manual", "Automatic"], priceBand: "₹6.5–9.5 lakh", seats: 5 },
-      { name: "Baleno", bodyType: "Hatchback", fuel: ["Petrol", "CNG"], transmission: ["Manual", "Automatic"], priceBand: "₹6.5–10 lakh",  seats: 5 },
-      // add or remove models here…
-    ],
-  },
-];
-export const ACTIVE_BRAND_ID = "maruti"; // the brand that is bookable
-```
-`modelNames()` (used for the enum and for fuzzy matching of spoken models) returns
-the names for `ACTIVE_BRAND_ID`. To switch brands, add a brand and change
-`ACTIVE_BRAND_ID`.
+The board, the day strip, availability, booking validation, the `centre` / `car_model`
+tool enums, and the agent's spoken hours/days all read from this file. So:
 
-### 6.3 Change the working hours or slot length
-Edit `HOURS` (and the slot step) in `server/src/carservice.ts`:
-```ts
-const HOURS: [string, string][] = [
-  ["09:00", "13:00"],   // morning block
-  ["14:00", "17:00"],   // afternoon block
-];
-```
-Slots are generated every **30 minutes** by `slotTimes()`. To use a different
-length, change the `m += 30` step inside `slotTimes()`. To run a single continuous
-block (say 09:00–18:00), make `HOURS` a single pair.
+- **Centres** → edit `centres` (the board columns and `centre` enum follow).
+- **Hours / slot length** → edit `hours` / `slotMinutes` (e.g. a single continuous
+  block is `[["09:00","18:00"]]`).
+- **Working days / window** → edit `workingDays` / `windowDays` (drop `"Sat"` to close
+  Saturdays; a date is offered if **any** working weekday matches).
+- **Models** → edit `models`. Car-service only uses the `name`, but the full attributes
+  are kept so the file is copy-paste compatible with the test-drive config.
 
-### 6.4 Change the booking window or working days
-In `server/src/carservice.ts`:
-- `WINDOW_DAYS` — how many calendar days ahead are bookable (default `7`).
-- `workingDays()` skips Sundays via `if (d.getDay() === 0) continue;`. Change `0`
-  (Sunday) to skip a different day, or remove the line to allow all days.
+> Days use the short names `Mon Tue Wed Thu Fri Sat Sun`. Delete `carservice-config.json`
+> to regenerate the defaults. `server/src/carservice.ts` holds the booking rules
+> (validation, storage) and the built-in defaults that seed the file.
 
-### 6.5 Change the agent's persona, language, or rules
+### 6.2 Change the agent's persona, language, or rules
 Edit `buildInstructions(cfg)` in `client/src/pages/CarService.tsx`. This string is
 the agent's system prompt; it already contains today's date, the brand + models,
 the centres, the bookable dates, and the booking steps. Rewrite it to change tone,
 the order of questions, or the business rules. Keep the **mandatory tool-use rules**
 below.
 
-### 6.6 Change the voice
+### 6.3 Change the voice
 The voice picker offers `mal-female` / `mal-male` (the only two swaram voices). The
 default is set by `useState<Voice>("mal-female")` in `CarService.tsx`. The agent's
 **name follows the chosen voice** — **"Maya"** (female) / **"Manu"** (male) — passed
 into `buildInstructions`, so the spoken self-intro matches the voice.
 
-### 6.7 Add or change a tool (function the agent can call)
+### 6.4 Add or change a tool (function the agent can call)
 
 This is the most important customization. Follow these steps and **conventions** —
 they are what make function calling reliable.
@@ -297,7 +287,7 @@ REST endpoints (the browser tool handler maps tool calls to these):
 
 | Method | Path | Purpose |
 |---|---|---|
-| `GET`  | `/api/carservice/config` | brand, models, centres, slot times, working days, today |
+| `GET`  | `/api/carservice/config` | brand, models, centres, slot times, working days, today, `hoursLabel`/`daysLabel` |
 | `GET`  | `/api/carservice/availability?centre=&date=` | free slots |
 | `GET`  | `/api/carservice/bookings` | existing bookings (for the board) |
 | `POST` | `/api/carservice/book` | validate + create a booking |

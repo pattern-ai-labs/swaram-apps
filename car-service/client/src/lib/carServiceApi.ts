@@ -10,12 +10,12 @@ export interface Day {
 export interface CarServiceConfig {
   brand: { id: string; name: string };
   models: string[];
-  brands: { id: string; name: string; models: string[] }[];
   centres: Centre[];
   slots: string[];
   days: Day[];
   today: string;
-  hours: string;
+  hoursLabel: string; // e.g. "9:00–13:00, 14:00–17:00"
+  daysLabel: string; // e.g. "Mon–Sat"
 }
 export interface ServiceBooking {
   id: string;

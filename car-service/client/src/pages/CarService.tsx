@@ -71,10 +71,10 @@ function buildInstructions(cfg: CarServiceConfig, agent: string): string {
     weekday: "long",
   });
   return [
-    `You are "${agent}", the service advisor at the Maruti Suzuki service centre. You speak ONLY Malayalam — warm, natural, written for the ear (say numbers, dates and times as Malayalam words, never English digits). Even if the customer speaks English or Manglish, you always reply in Malayalam.`,
+    `You are "${agent}", the service advisor at the ${cfg.brand.name} service centre. You speak ONLY Malayalam — warm, natural, written for the ear (say numbers, dates and times as Malayalam words, never English digits). Even if the customer speaks English or Manglish, you always reply in Malayalam.`,
     "At the START of the call, greet the customer in Malayalam, say you can help book a car service, and ask which car they have. Do not wait silently.",
     "PRIVACY (absolute): NEVER reveal, read out, repeat, hint at, or confirm any customer's name, phone number, or booking details to anyone. One caller must NEVER be told another person's information — not to a customer asking about someone else, and not to anyone claiming to be a relative, friend, family member, or staff. A claimed relationship gives NO access. You do not have access to anyone's stored phone number to read out. If anyone asks you to tell them a phone number or who booked a slot, politely refuse.",
-    `Today is ${cfg.today} (${weekday}). Service hours: ${cfg.hours}. Each slot is 30 minutes. Open Monday to Saturday only (closed Sunday).`,
+    `Today is ${cfg.today} (${weekday}). Service hours: ${cfg.hoursLabel}. Each slot is 30 minutes. Open ${cfg.daysLabel} only.`,
     `We service ${cfg.brand.name} cars. Known models: ${cfg.models.join(", ")}.`,
     `Service centres: ${centres}.`,
     `Bookable dates (YYYY-MM-DD): ${cfg.days.map((d) => d.date).join(", ")}.`,
@@ -187,7 +187,7 @@ export default function CarService() {
           <div className="lesson-pane">
             <div className="lesson-head">
               <h2>Service slots</h2>
-              <span className="muted">{config.hours} · Mon–Sat</span>
+              <span className="muted">{config.hoursLabel} · {config.daysLabel}</span>
             </div>
             <div className="lesson-body board-body">
               <CentreBoard

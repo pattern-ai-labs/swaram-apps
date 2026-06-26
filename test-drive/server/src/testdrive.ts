@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { randomUUID } from "node:crypto";
-import { activeBrand, modelNames } from "./carCatalog.js";
+import { activeBrand, type CarModel } from "./carCatalog.js";
 
 export interface Dealership {
   id: string;
@@ -9,36 +9,70 @@ export interface Dealership {
   area: string;
 }
 
-// Same Maruti locations as the service centres, here acting as dealerships.
-export const DEALERSHIPS: Dealership[] = [
-  { id: "kakkanad", name: "Kakkanad", area: "Kakkanad" },
-  { id: "thripunithura", name: "Thripunithura", area: "Thripunithura" },
-  { id: "edapally", name: "Edapally", area: "Edapally" },
-  { id: "ernakulam", name: "Ernakulam", area: "Ernakulam (M.G. Road)" },
-];
-
-// Closed value sets for the enrichment fields (used as tool enums + UI labels).
-export const BUDGET_BANDS = ["Under ₹6 lakh", "₹6–10 lakh", "₹10–15 lakh", "Above ₹15 lakh"];
-export const FUEL_OPTIONS = ["Petrol", "Diesel", "CNG", "Hybrid"];
-export const TRANSMISSION_OPTIONS = ["Manual", "Automatic"];
-export const TIMELINE_OPTIONS = ["This month", "1–3 months", "Just exploring"];
+/** Enrichment value sets are configurable; finance is a fixed Yes/No. */
 export const YESNO_OPTIONS = ["Yes", "No"];
 
-const HOURS: [string, string][] = [
-  ["09:00", "13:00"],
-  ["14:00", "17:00"],
-];
-const WINDOW_DAYS = 7; // calendar days from today (Sundays skipped)
+const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
+
+/** Operator-editable test-drive configuration (see testdrive-config.json). */
+export interface TestDriveConfigFile {
+  windowDays: number;
+  slotMinutes: number;
+  workingDays: string[];
+  hours: [string, string][];
+  brand: { id: string; name: string };
+  dealerships: Dealership[];
+  models: CarModel[];
+  enrich: {
+    budget: string[];
+    fuel: string[];
+    transmission: string[];
+    timeline: string[];
+  };
+}
+
+/** Built-in defaults; written to testdrive-config.json on first run, then editable. */
+const DEFAULT_CONFIG: TestDriveConfigFile = {
+  windowDays: 7,
+  slotMinutes: 30,
+  workingDays: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+  hours: [["09:00", "13:00"], ["14:00", "17:00"]],
+  brand: { id: activeBrand().id, name: activeBrand().name },
+  // Same Maruti locations as the service centres, here acting as dealerships.
+  dealerships: [
+    { id: "kakkanad", name: "Kakkanad", area: "Kakkanad" },
+    { id: "thripunithura", name: "Thripunithura", area: "Thripunithura" },
+    { id: "edapally", name: "Edapally", area: "Edapally" },
+    { id: "ernakulam", name: "Ernakulam", area: "Ernakulam (M.G. Road)" },
+  ],
+  models: activeBrand().models,
+  enrich: {
+    budget: ["Under ₹6 lakh", "₹6–10 lakh", "₹10–15 lakh", "Above ₹15 lakh"],
+    fuel: ["Petrol", "Diesel", "CNG", "Hybrid"],
+    transmission: ["Manual", "Automatic"],
+    timeline: ["This month", "1–3 months", "Just exploring"],
+  },
+};
+
+let config: TestDriveConfigFile = DEFAULT_CONFIG;
+
+/** Dealerships from the live (operator-editable) config. A live `let` binding. */
+export let DEALERSHIPS: Dealership[] = config.dealerships;
+
+/** Model names from config (used for enum constraints / matching). */
+export function modelNames(): string[] {
+  return config.models.map((m) => m.name);
+}
 
 export function slotTimes(): string[] {
   const out: string[] = [];
-  for (const [start, end] of HOURS) {
+  for (const [start, end] of config.hours) {
     let [h, m] = start.split(":").map(Number);
     const [eh, em] = end.split(":").map(Number);
     while (h < eh || (h === eh && m < em)) {
       out.push(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`);
-      m += 30;
-      if (m >= 60) {
+      m += config.slotMinutes;
+      while (m >= 60) {
         m -= 60;
         h += 1;
       }
@@ -60,16 +94,33 @@ export interface Day {
 
 export function workingDays(): Day[] {
   const days: Day[] = [];
+  const open = new Set(config.workingDays);
   const today = new Date();
-  for (let i = 0; i < WINDOW_DAYS; i++) {
+  for (let i = 0; i < config.windowDays; i++) {
     const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() + i);
-    if (d.getDay() === 0) continue; // skip Sunday
+    if (!open.has(WEEKDAYS[d.getDay()])) continue;
     days.push({
       date: fmt(d),
       label: d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }),
     });
   }
   return days;
+}
+
+/** "Mon–Sat" when contiguous, else "Mon, Wed, Fri". */
+export function daysLabel(): string {
+  const idx = config.workingDays
+    .map((w) => (WEEKDAYS as readonly string[]).indexOf(w))
+    .sort((a, b) => a - b);
+  const contiguous = idx.every((n, i) => i === 0 || n === idx[i - 1] + 1);
+  if (contiguous && idx.length > 2) return `${WEEKDAYS[idx[0]]}–${WEEKDAYS[idx[idx.length - 1]]}`;
+  return idx.map((n) => WEEKDAYS[n]).join(", ");
+}
+
+/** "9:00–13:00, 14:00–17:00" from the configured hour windows. */
+export function hoursLabel(): string {
+  const trim = (t: string) => t.replace(/^0/, "");
+  return config.hours.map(([s, e]) => `${trim(s)}–${trim(e)}`).join(", ");
 }
 
 export function today(): string {
@@ -147,8 +198,39 @@ export interface TestDrive {
 const DATA_DIR = fileURLToPath(new URL("../data/", import.meta.url));
 const LEADS_FILE = fileURLToPath(new URL("../data/leads.json", import.meta.url));
 const TD_FILE = fileURLToPath(new URL("../data/testdrive-bookings.json", import.meta.url));
+const CONFIG_FILE = fileURLToPath(new URL("../data/testdrive-config.json", import.meta.url));
 let leads: Lead[] = [];
 let testdrives: TestDrive[] = [];
+
+/** Load the operator-editable config (dealerships, hours, models, enrich sets). On first
+ *  run it writes the defaults to testdrive-config.json; edit + restart to change it. */
+export function loadConfig(): void {
+  if (existsSync(CONFIG_FILE)) {
+    try {
+      const parsed = JSON.parse(readFileSync(CONFIG_FILE, "utf8")) as TestDriveConfigFile;
+      if (parsed?.dealerships?.length && parsed?.models?.length) {
+        config = {
+          windowDays: parsed.windowDays || DEFAULT_CONFIG.windowDays,
+          slotMinutes: parsed.slotMinutes || DEFAULT_CONFIG.slotMinutes,
+          workingDays: parsed.workingDays?.length ? parsed.workingDays : DEFAULT_CONFIG.workingDays,
+          hours: parsed.hours?.length ? parsed.hours : DEFAULT_CONFIG.hours,
+          brand: parsed.brand || DEFAULT_CONFIG.brand,
+          dealerships: parsed.dealerships,
+          models: parsed.models,
+          enrich: { ...DEFAULT_CONFIG.enrich, ...(parsed.enrich || {}) },
+        };
+        DEALERSHIPS = config.dealerships;
+        return;
+      }
+    } catch {
+      /* fall through to defaults */
+    }
+  }
+  config = DEFAULT_CONFIG;
+  DEALERSHIPS = config.dealerships;
+  if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
+  writeFileSync(CONFIG_FILE, JSON.stringify(DEFAULT_CONFIG, null, 2));
+}
 
 function saveLeads(): void {
   if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
@@ -160,6 +242,7 @@ function saveTestDrives(): void {
 }
 
 export function loadTestDriveData(): void {
+  loadConfig();
   if (existsSync(LEADS_FILE)) {
     try {
       leads = JSON.parse(readFileSync(LEADS_FILE, "utf8"));
@@ -178,21 +261,21 @@ export function loadTestDriveData(): void {
 
 // ---- config ----
 export function getConfig() {
-  const brand = activeBrand();
   return {
-    brand: { id: brand.id, name: brand.name },
-    models: brand.models, // full attributes for recommendation + the lineup view
+    brand: config.brand,
+    models: config.models, // full attributes for recommendation + the lineup view
     modelNames: modelNames(),
     dealerships: DEALERSHIPS,
     slots: slotTimes(),
     days: workingDays(),
     today: today(),
-    hours: "9:00–13:00, 14:00–17:00",
+    hoursLabel: hoursLabel(),
+    daysLabel: daysLabel(),
     enrich: {
-      budget: BUDGET_BANDS,
-      fuel: FUEL_OPTIONS,
-      transmission: TRANSMISSION_OPTIONS,
-      timeline: TIMELINE_OPTIONS,
+      budget: config.enrich.budget,
+      fuel: config.enrich.fuel,
+      transmission: config.enrich.transmission,
+      timeline: config.enrich.timeline,
       finance: YESNO_OPTIONS,
     },
   };

@@ -130,11 +130,12 @@ test-drive/
 ├── dev.sh                      # runs server + client together
 ├── server/                     # Express API (the source of truth)
 │   ├── .env.example            # your SWARAM_API_KEY goes here
+│   ├── testdrive-config.example.json # ★ sample dealerships + hours + models + enrich sets
 │   └── src/
 │       ├── index.ts            # app entry: mounts the routes
 │       ├── config.ts           # reads .env (only needs SWARAM_API_KEY)
-│       ├── testdrive.ts        # ★ DOMAIN: dealerships, enums, leads, slots, validation, storage
-│       ├── carCatalog.ts       # ★ DOMAIN: brand + car models (the line-up)
+│       ├── testdrive.ts        # ★ DOMAIN: loads testdrive-config.json, leads, validation, storage
+│       ├── carCatalog.ts       #   default car line-up (seeds the config file)
 │       └── routes/
 │           ├── testdrive.ts    # ★ test-drive REST endpoints
 │           ├── swaramToken.ts  #   reusable: mints the browser token
@@ -161,81 +162,80 @@ else is the reusable voice kit.
 
 ## 6. How to customize
 
-Almost everything you'll want to change is in **three files**:
-`server/src/carCatalog.ts` (the car line-up), `server/src/testdrive.ts` (the
-dealerships, enrichment value sets + rules), and `client/src/pages/TestDrive.tsx`
-(the persona + tools).
+Most changes are in two places: **`server/data/testdrive-config.json`** (dealerships,
+hours, working days, the car line-up, and the enrichment value sets — see §6.1) and
+`client/src/pages/TestDrive.tsx` (the persona + tools).
 
-### 6.1 Change the car models (the line-up)
-Edit the `models` array of the active brand in `server/src/carCatalog.ts`:
-```ts
-{ name: "Swift", bodyType: "Hatchback", fuel: ["Petrol", "CNG"],
-  transmission: ["Manual", "Automatic"], priceBand: "₹6.5–9.5 lakh", seats: 5 },
-// add one:
-{ name: "Fronx", bodyType: "SUV", fuel: ["Petrol", "CNG"],
-  transmission: ["Manual", "Automatic"], priceBand: "₹7.5–13 lakh", seats: 5 },
-```
-The `name` of each model is what the agent recognizes, reads back, and what the
-`interestedModels` / `car_model` enums are built from (via `modelNames()`). The
-attributes are fed to the persona so Diya can recommend by body type, budget, fuel
-and seats — **the agent is told never to invent a model or price.** To switch
-brands entirely, add a `Brand` to `BRANDS` and point `ACTIVE_BRAND_ID` at it.
+### 6.1 Change dealerships, hours, models, and enrichment sets (no code)
+The dealerships, working hours/days, booking window, the car **line-up**, and the
+**enrichment value sets** (budget / fuel / transmission / timeline) all live in an
+**editable config file**, not in code. On first run the server writes
+`server/data/testdrive-config.json` from the built-in defaults; edit that file and
+**restart** the server to change anything. A committed copy of the defaults lives at
+**[`server/testdrive-config.example.json`](./server/testdrive-config.example.json)**
+for reference (you can also `cp server/testdrive-config.example.json server/data/testdrive-config.json`
+to start from it).
 
-### 6.2 Change the dealerships
-Edit the `DEALERSHIPS` array in `server/src/testdrive.ts`:
-```ts
-export const DEALERSHIPS: Dealership[] = [
-  { id: "kakkanad",      name: "Kakkanad",      area: "Kakkanad" },
-  { id: "thripunithura", name: "Thripunithura", area: "Thripunithura" },
-  // add one:
-  { id: "aluva",         name: "Aluva",         area: "Aluva" },
-];
+```jsonc
+{
+  "windowDays": 7,
+  "slotMinutes": 30,
+  "workingDays": ["Mon","Tue","Wed","Thu","Fri","Sat"],
+  "hours": [["09:00","13:00"], ["14:00","17:00"]],
+  "brand": { "id": "maruti", "name": "Maruti Suzuki" },
+  "dealerships": [
+    { "id": "kakkanad", "name": "Kakkanad", "area": "Kakkanad" }   // id unique + stable
+    // add / remove dealerships here…
+  ],
+  "models": [
+    { "name": "Swift", "bodyType": "Hatchback", "fuel": ["Petrol","CNG"],
+      "transmission": ["Manual","Automatic"], "priceBand": "₹6.5–9.5 lakh", "seats": 5 }
+    // add / remove models here… (attributes feed Diya's recommendations)
+  ],
+  "enrich": {
+    "budget": ["Under ₹6 lakh","₹6–10 lakh","₹10–15 lakh","Above ₹15 lakh"],
+    "fuel": ["Petrol","Diesel","CNG","Hybrid"],
+    "transmission": ["Manual","Automatic"],
+    "timeline": ["This month","1–3 months","Just exploring"]
+  }
+}
 ```
-`id` must be unique and stable (bookings reference it). The `dealership` enum in the
-tools and `check_availability` both read from this list automatically. Test-drive
-hours, slot length and the bookable window are `HOURS`, the `m += 30` step in
-`slotTimes()`, and `WINDOW_DAYS` in the same file (`workingDays()` skips Sunday via
-`if (d.getDay() === 0) continue;`).
 
-### 6.3 Change the enrichment fields and their value sets
-The closed sets the agent must snap answers to live at the top of
-`server/src/testdrive.ts`:
-```ts
-export const BUDGET_BANDS = ["Under ₹6 lakh", "₹6–10 lakh", "₹10–15 lakh", "Above ₹15 lakh"];
-export const FUEL_OPTIONS = ["Petrol", "Diesel", "CNG", "Hybrid"];
-export const TRANSMISSION_OPTIONS = ["Manual", "Automatic"];
-export const TIMELINE_OPTIONS = ["This month", "1–3 months", "Just exploring"];
-export const YESNO_OPTIONS = ["Yes", "No"]; // used for `finance`
-```
-These are returned by `getConfig().enrich` and become the tool **enums** in
-`buildTools` (`cfg.enrich.budget`, `.fuel`, `.transmission`, `.timeline`,
-`.finance`). To add a new enriched field (say `colour`):
-1. Add a value set + include it in `getConfig().enrich`.
-2. Add the field to the `Lead` interface, `EMPTY_LEAD`, and the `set(...)` calls in
-   `saveLead`, and to `LeadInput`.
-3. Add it as an enum-constrained property of `save_lead` in `buildTools`, mirror it
-   in the `Lead` type in `client/src/lib/testdriveApi.ts`, and add a row to
-   `FIELDS` + `rows` in `components/LeadCard.tsx`.
-4. Tell the persona to ask for it (see 6.4).
+Everything reads from this file: the board columns, the day strip, availability,
+booking validation, the `dealership` / `car_model` enums, the **lead-card pills**, and
+the `save_lead` enum constraints (`budget`/`fuel`/`transmission`/`timeline`). So:
+
+- **Dealerships / hours / window** → edit `dealerships` / `hours` / `slotMinutes` /
+  `workingDays` / `windowDays` (a continuous block is `[["09:00","18:00"]]`; drop
+  `"Sat"` to close Saturdays).
+- **Models (the line-up)** → edit `models`; `name` is what the agent recognizes and
+  reads back, and the attributes feed recommendations. *The agent is told never to
+  invent a model or price.*
+- **Enrichment sets** → edit `enrich.*` — e.g. add a finer band like `"Under ₹5 lakh"`
+  to `budget`. (`finance` is a fixed Yes/No and stays in code.)
 
 > The `timeline` value also drives the lead-temperature tag in `LeadCard.tsx`
 > (`This month` → 🔥 Hot, `1–3 months` → Warm, `Just exploring` → Cold). Keep those
-> labels in sync if you rename a timeline option.
+> labels in sync if you rename a timeline option. Adding a brand-new enriched **field**
+> (say `colour`) still needs code — add it to the `Lead` type, `EMPTY_LEAD`, `saveLead`,
+> the `save_lead` tool, the client `Lead` type, and `LeadCard.tsx`. The built-in
+> defaults that seed the config live in `server/src/testdrive.ts` (+ `carCatalog.ts`
+> for the model list).
 
-### 6.4 Change the agent's persona, language, or rules
+### 6.2 Change the agent's persona, language, or rules
 Edit `buildInstructions(cfg)` in `client/src/pages/TestDrive.tsx`. This string is
 the agent's system prompt; it already contains today's date, the dealership list,
 the bookable dates, the full line-up, the **order of questions to ask**, and the
 booking steps. Rewrite it to change tone, the questions, or the business rules. Keep
 the **mandatory tool-use rules** below.
 
-### 6.5 Change the voice
+### 6.3 Change the voice
 The voice picker offers `mal-female` / `mal-male` (the only two swaram voices). The
 default is set by `useState<Voice>("mal-female")` in `TestDrive.tsx`. The agent's
 **name follows the chosen voice** — **"Diya"** (female) / **"Dev"** (male) — passed
 into `buildInstructions`, so the spoken self-intro matches the voice.
 
-### 6.6 Add or change a tool (function the agent can call)
+### 6.4 Add or change a tool (function the agent can call)
 
 This is the most important customization. Follow these steps and **conventions** —
 they are what make function calling reliable.
@@ -323,7 +323,7 @@ REST endpoints (the browser tool handler maps tool calls to these):
 
 | Method | Path | Purpose |
 |---|---|---|
-| `GET`  | `/api/testdrive/config` | brand, models, dealerships, slot times, days, today, enrichment value sets |
+| `GET`  | `/api/testdrive/config` | brand, models, dealerships, slot times, days, today, `hoursLabel`/`daysLabel`, enrichment value sets |
 | `POST` | `/api/testdrive/lead` | create or **merge** a lead (enrichment) |
 | `GET`  | `/api/testdrive/lead/:id` | fetch one lead |
 | `GET`  | `/api/testdrive/availability?dealership=&date=` | free slots |

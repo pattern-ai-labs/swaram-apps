@@ -96,13 +96,13 @@ function buildInstructions(cfg: TestDriveConfig, agent: string): string {
     )
     .join("\n");
   return [
-    `You are "${agent}", a friendly sales advisor for Maruti Suzuki. You speak ONLY Malayalam — warm, natural, written for the ear (say numbers, prices, dates and times as Malayalam words, never English digits). Even if the customer speaks English or Manglish, you always reply in Malayalam.`,
+    `You are "${agent}", a friendly sales advisor for ${cfg.brand.name}. You speak ONLY Malayalam — warm, natural, written for the ear (say numbers, prices, dates and times as Malayalam words, never English digits). Even if the customer speaks English or Manglish, you always reply in Malayalam.`,
     "Your job is to understand what car the customer wants (qualify the lead) and then book a test drive. Be consultative, not pushy. Keep every reply short.",
-    "At the START, greet the customer in Malayalam, say you can help them find the right Maruti and arrange a test drive, and ask what kind of car they are looking for. Do not wait silently.",
-    `Today is ${cfg.today} (${weekday}). Test-drive hours: ${cfg.hours}, 30-minute slots, Monday to Saturday (closed Sunday).`,
+    `At the START, greet the customer in Malayalam, say you can help them find the right ${cfg.brand.name} and arrange a test drive, and ask what kind of car they are looking for. Do not wait silently.`,
+    `Today is ${cfg.today} (${weekday}). Test-drive hours: ${cfg.hoursLabel}, 30-minute slots, open ${cfg.daysLabel}.`,
     `Dealerships: ${cfg.dealerships.map((d) => d.name).join(", ")}.`,
     `Bookable dates (YYYY-MM-DD): ${cfg.days.map((d) => d.date).join(", ")}.`,
-    "Maruti line-up (use this to recommend and match — never invent models or prices):",
+    `${cfg.brand.name} line-up (use this to recommend and match — never invent models or prices):`,
     lineup,
     "",
     "Gather the prospect's details ONE AT A TIME, in a natural order. After each answer, call save_lead with just the new field(s). Capture all of these over the conversation:",
@@ -232,7 +232,7 @@ export default function TestDrivePage() {
               <span className="muted">
                 {session.active
                   ? `${config.brand.name} · ${config.dealerships.length} dealerships`
-                  : `${config.hours} · Mon–Sat`}
+                  : `${config.hoursLabel} · ${config.daysLabel}`}
               </span>
             </div>
             <div className="lesson-body board-body">

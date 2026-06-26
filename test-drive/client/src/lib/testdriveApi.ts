@@ -30,7 +30,8 @@ export interface TestDriveConfig {
   slots: string[];
   days: Day[];
   today: string;
-  hours: string;
+  hoursLabel: string; // e.g. "9:00–13:00, 14:00–17:00"
+  daysLabel: string; // e.g. "Mon–Sat"
   enrich: EnrichSets;
 }
 export interface Lead {
