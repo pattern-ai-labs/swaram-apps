@@ -103,10 +103,11 @@ clinic-appointments/
 ├── dev.sh                    # runs server + client together
 ├── server/                   # Express API (the source of truth)
 │   ├── .env.example          # your SWARAM_API_KEY goes here
+│   ├── clinic-config.example.json # ★ sample doctors + per-doctor days/hours
 │   └── src/
 │       ├── index.ts          # app entry: mounts the routes
 │       ├── config.ts         # reads .env (only needs SWARAM_API_KEY)
-│       ├── clinic.ts         # ★ DOMAIN: doctors, slots, working days, validation, storage
+│       ├── clinic.ts         # ★ DOMAIN: loads clinic-config.json, validation, storage
 │       ├── identity.ts       #   reusable: phoneMatches (strict) + nameMatches (lenient)
 │       └── routes/
 │           ├── clinic.ts     # ★ clinic REST endpoints
@@ -134,55 +135,70 @@ is the reusable voice kit.
 
 ## 6. How to customize
 
-Almost everything you'll want to change is in **two files**:
-`server/src/clinic.ts` (the data + rules) and `client/src/pages/Clinic.tsx`
-(the persona + tools).
+Most changes are in three places: **`server/data/clinic-config.json`** (doctors +
+their availability — see §6.1), `server/src/clinic.ts` (the booking rules +
+storage), and `client/src/pages/Clinic.tsx` (the persona + tools).
 
-### 6.1 Change the doctors
-Edit the `DOCTORS` array in `server/src/clinic.ts`:
-```ts
-export const DOCTORS: Doctor[] = [
-  { id: "dr-meera",  name: "Dr. Meera Nair",  specialty: "General Medicine" },
-  { id: "dr-rajeev", name: "Dr. Rajeev Menon", specialty: "Pediatrics" },
-  // add one:
-  { id: "dr-anu",    name: "Dr. Anu Varghese", specialty: "Dermatology" },
-];
+### 6.1 Change the doctors and their availability (no code)
+Doctors, **their own working days**, and **their own clinic hours** live in an
+**editable config file**, not in code. On first run the server writes
+`server/data/clinic-config.json` from the built-in defaults; edit that file and
+**restart** the server to change anything. A committed copy of the defaults lives at
+**[`server/clinic-config.example.json`](./server/clinic-config.example.json)** for
+reference (you can also `cp server/clinic-config.example.json server/data/clinic-config.json`
+to start from it).
+
+```jsonc
+{
+  "windowDays": 14,        // how many days ahead are bookable
+  "slotMinutes": 30,       // slot length
+  "doctors": [
+    {
+      "id": "dr-meera",                 // unique + stable (bookings reference it)
+      "name": "Dr. Meera Nair",
+      "specialty": "General Medicine",
+      "workingDays": ["Mon","Tue","Wed","Thu","Fri","Sat"],
+      "hours": [["09:00","13:00"], ["14:00","17:00"]]
+    },
+    {
+      "id": "dr-rajeev",
+      "name": "Dr. Rajeev Menon",
+      "specialty": "Pediatrics",
+      "workingDays": ["Mon","Wed","Fri","Sat"],   // this doctor works fewer days…
+      "hours": [["10:00","13:00"], ["15:00","18:00"]]  // …and different hours
+    }
+  ]
+}
 ```
-`id` must be unique and stable (bookings reference it). That's it — the board, the
-availability logic, and the tool's `doctor` enum all read from this list
-automatically.
 
-### 6.2 Change the working hours or slot length
-Edit `HOURS` (and the slot step) in `server/src/clinic.ts`:
-```ts
-const HOURS: [string, string][] = [
-  ["09:00", "13:00"],   // morning block
-  ["14:00", "17:00"],   // afternoon block
-];
-```
-Slots are generated every **30 minutes** by `slotTimes()`. To use a different
-length, change the `m += 30` step inside `slotTimes()`. To run a single continuous
-block (say 10:00–18:00), make `HOURS` a single pair.
+Each doctor's slots are generated from **their own** `hours` every `slotMinutes`
+minutes. The board, the per-doctor availability, the booking validation, the
+tool's `doctor` enum, and the agent's prompt all read from this file — so:
 
-### 6.3 Change the booking window or working days
-In `server/src/clinic.ts`:
-- `WINDOW_DAYS` — how many days ahead are bookable (default `14`).
-- `workingDays()` skips Sundays via `if (d.getDay() === 0) continue;`. Change `0`
-  (Sunday) to skip a different day, or remove the line to allow all days.
+- **Add a doctor** → add an object (give it a unique `id`).
+- **Change one doctor's hours/days** → edit that doctor's `hours` / `workingDays`
+  only; the others are unaffected.
+- **A continuous block** (say 10:00–18:00) → make `hours` a single pair `[["10:00","18:00"]]`.
+- **Different slot length** → change `slotMinutes`.
 
-### 6.4 Change the agent's persona, language, or rules
+> Days use the short names `Mon Tue Wed Thu Fri Sat Sun`. A date is bookable if
+> **at least one** doctor works that weekday; a doctor's column shows
+> "Closed this day" on days they don't work. Delete `clinic-config.json` to
+> regenerate the defaults.
+
+### 6.2 Change the agent's persona, language, or rules
 Edit `buildInstructions(cfg)` in `client/src/pages/Clinic.tsx`. This string is the
 agent's system prompt; it already contains today's date, the doctor list, the
 bookable dates, and the booking steps. Rewrite it to change tone, the order of
 questions, or the business rules. Keep the **mandatory tool-use rules** below.
 
-### 6.5 Change the voice
+### 6.3 Change the voice
 The voice picker offers `mal-female` / `mal-male` (the only two swaram voices). The
 default is set by `useState<Voice>("mal-female")` in `Clinic.tsx`. The agent's **name
 follows the chosen voice** — **"Asha"** (female) / **"Arun"** (male) — passed into
 `buildInstructions`, so the spoken self-intro matches the voice.
 
-### 6.6 Add or change a tool (function the agent can call)
+### 6.4 Add or change a tool (function the agent can call)
 
 This is the most important customization. Follow these steps and **conventions** —
 they are what make function calling reliable. (`check_availability`,

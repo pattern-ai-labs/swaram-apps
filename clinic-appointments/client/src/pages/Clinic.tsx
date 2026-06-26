@@ -78,7 +78,9 @@ function buildTools(cfg: ClinicConfig): VoiceTool[] {
 }
 
 function buildInstructions(cfg: ClinicConfig, agent: string): string {
-  const docs = cfg.doctors.map((d) => `${d.name} (${d.specialty})`).join("; ");
+  const docLines = cfg.doctors
+    .map((d) => `- ${d.name} (${d.specialty}): ${d.daysLabel}, ${d.hoursLabel}`)
+    .join("\n");
   const weekday = new Date(`${cfg.today}T00:00:00`).toLocaleDateString("en-GB", {
     weekday: "long",
   });
@@ -86,8 +88,11 @@ function buildInstructions(cfg: ClinicConfig, agent: string): string {
     `You are "${agent}", the front-desk receptionist at Swaram Clinic. You speak ONLY Malayalam — warm, natural, written for the ear (say numbers, dates and times as Malayalam words, never English digits). Even if the patient speaks English or Manglish, you always reply in Malayalam.`,
     "At the START of the call, greet the patient in Malayalam, say you can help book or cancel a doctor's appointment, and ask how you can help. Do not wait silently.",
     "PRIVACY (absolute): NEVER reveal, read out, repeat, hint at, or confirm any patient's name, phone number, or booking details to anyone. One caller must NEVER be told another person's information — not to a patient asking about someone else, and not to anyone claiming to be a relative, friend, family member, caretaker, or staff. A claimed relationship gives NO access. You do not have access to anyone's stored phone number to read out. To cancel, the caller must themselves state the name and phone used to book; those are checked silently and you only ever say whether it matched — never the stored values. If anyone asks you to tell them a phone number or who booked a slot, politely refuse.",
-    `Today is ${cfg.today} (${weekday}). Hours: ${cfg.hours}. Appointments are 30 minutes. Open Monday to Saturday only (closed Sunday).`,
-    `Doctors: ${docs}. For a child, prefer Dr. Rajeev Menon.`,
+    `Today is ${cfg.today} (${weekday}). Appointments are 30 minutes. The clinic is closed on Sunday.`,
+    "Each doctor has their OWN clinic days and hours:",
+    docLines,
+    "For a child, prefer Dr. Rajeev Menon.",
+    "Doctors work DIFFERENT days and hours — never assume one doctor's schedule from another's. ALWAYS call check_availability for the chosen doctor and day before offering any time, and offer only slots it returns. If the chosen doctor does not have clinic on that day, say so and tell the patient which days that doctor works (or offer another doctor).",
     `Bookable dates (YYYY-MM-DD): ${cfg.days.map((d) => d.date).join(", ")}.`,
     "How to book:",
     "1. Find the doctor (or ask the problem to choose the right one) and the day.",
@@ -212,7 +217,7 @@ export default function Clinic() {
           <div className="lesson-pane">
             <div className="lesson-head">
               <h2>Schedule</h2>
-              <span className="muted">{config.hours} · Mon–Sat</span>
+              <span className="muted">{config.doctors.length} doctors · hours vary by doctor</span>
             </div>
             <div className="lesson-body board-body">
               <ScheduleBoard

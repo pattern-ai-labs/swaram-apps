@@ -2,6 +2,11 @@ export interface Doctor {
   id: string;
   name: string;
   specialty: string;
+  workingDays: string[]; // e.g. ["Mon","Wed","Fri","Sat"]
+  hours: [string, string][]; // e.g. [["09:00","13:00"],["14:00","17:00"]]
+  slots: string[]; // this doctor's own 30-min slot starts
+  hoursLabel: string; // e.g. "9:00–13:00, 15:00–18:00"
+  daysLabel: string; // e.g. "Mon–Sat" or "Mon, Wed, Fri"
 }
 export interface Day {
   date: string;
@@ -9,10 +14,9 @@ export interface Day {
 }
 export interface ClinicConfig {
   doctors: Doctor[];
-  slots: string[];
+  slots: string[]; // superset of all doctors' slots (the tool time enum)
   days: Day[];
   today: string;
-  hours: string;
 }
 export interface Booking {
   id: string;

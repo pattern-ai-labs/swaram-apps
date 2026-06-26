@@ -4,6 +4,22 @@ All notable changes to **swaram-apps** are documented here. The format is based 
 [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.0.2] — 2026-06-26
+
+### Added
+- **clinic-appointments** — **per-doctor availability, editable without code.** Each
+  doctor now has their **own working days and hours**, read from an operator-editable
+  `server/data/clinic-config.json` (seeded from defaults on first run; edit + restart to
+  change). A committed `server/clinic-config.example.json` shows the shape, and the
+  README documents it. The schedule board renders each doctor's own slots and marks
+  "Closed this day" on their off-days; availability and booking validate against *that*
+  doctor's days and hours; the agent prompt lists each doctor's schedule and always
+  checks availability for the chosen doctor and day.
+
+### Changed
+- **clinic-appointments** — the schedule board's hover tooltip now shows the patient's
+  **name only** (the phone number is no longer revealed on hover).
+
 ## [1.0.1] — 2026-06-26
 
 ### Added
@@ -54,5 +70,6 @@ uses Amazon Bedrock).
 - Each app carries its own copy of the reusable **voice kit** — to build a new agent,
   swap the domain and keep the pipeline.
 
+[1.0.2]: https://github.com/pattern-ai-labs/swaram-apps/releases/tag/v1.0.2
 [1.0.1]: https://github.com/pattern-ai-labs/swaram-apps/releases/tag/v1.0.1
 [1.0.0]: https://github.com/pattern-ai-labs/swaram-apps/releases/tag/v1.0.0

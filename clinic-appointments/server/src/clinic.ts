@@ -7,7 +7,20 @@ export interface Doctor {
   id: string;
   name: string;
   specialty: string;
+  /** Weekdays this doctor holds clinic, e.g. ["Mon","Wed","Fri","Sat"]. */
+  workingDays: string[];
+  /** This doctor's clinic windows, e.g. [["09:00","13:00"],["14:00","17:00"]]. */
+  hours: [string, string][];
 }
+
+/** Editable clinic configuration (operator-editable JSON; see clinic-config.json). */
+export interface ClinicConfigFile {
+  windowDays: number;
+  slotMinutes: number;
+  doctors: Doctor[];
+}
+
+const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
 
 export interface Booking {
   id: string;
@@ -19,33 +32,76 @@ export interface Booking {
   createdAt: string;
 }
 
-export const DOCTORS: Doctor[] = [
-  { id: "dr-meera", name: "Dr. Meera Nair", specialty: "General Medicine" },
-  { id: "dr-rajeev", name: "Dr. Rajeev Menon", specialty: "Pediatrics" },
-];
+/** Built-in defaults; written to clinic-config.json on first run, then operator-editable.
+ *  Each doctor carries their OWN working days and clinic hours (deliberately different
+ *  here so per-doctor availability is visible out of the box). */
+const DEFAULT_CONFIG: ClinicConfigFile = {
+  windowDays: 14,
+  slotMinutes: 30,
+  doctors: [
+    {
+      id: "dr-meera",
+      name: "Dr. Meera Nair",
+      specialty: "General Medicine",
+      workingDays: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+      hours: [["09:00", "13:00"], ["14:00", "17:00"]],
+    },
+    {
+      id: "dr-rajeev",
+      name: "Dr. Rajeev Menon",
+      specialty: "Pediatrics",
+      workingDays: ["Mon", "Wed", "Fri", "Sat"],
+      hours: [["10:00", "13:00"], ["15:00", "18:00"]],
+    },
+  ],
+};
 
-const HOURS: [string, string][] = [
-  ["09:00", "13:00"],
-  ["14:00", "17:00"],
-];
-const WINDOW_DAYS = 14; // calendar days from today (Sundays skipped)
+let config: ClinicConfigFile = DEFAULT_CONFIG;
 
-/** All 30-minute slot start times for a day, e.g. 09:00 … 12:30, 14:00 … 16:30 */
-export function slotTimes(): string[] {
+/** Doctors from the live (operator-editable) config. A live `let` binding, so it
+ *  reflects whatever loadClinic() read from clinic-config.json. */
+export let DOCTORS: Doctor[] = config.doctors;
+
+/** 30-minute slot starts within a set of [start,end] windows. */
+export function slotTimesForHours(
+  hours: [string, string][],
+  stepMin: number = config.slotMinutes
+): string[] {
   const out: string[] = [];
-  for (const [start, end] of HOURS) {
+  for (const [start, end] of hours) {
     let [h, m] = start.split(":").map(Number);
     const [eh, em] = end.split(":").map(Number);
     while (h < eh || (h === eh && m < em)) {
       out.push(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`);
-      m += 30;
-      if (m >= 60) {
+      m += stepMin;
+      while (m >= 60) {
         m -= 60;
         h += 1;
       }
     }
   }
   return out;
+}
+
+/** One doctor's own slot starts (from their hours). */
+export function slotsFor(doctor: Doctor): string[] {
+  return slotTimesForHours(doctor.hours);
+}
+
+/** The union of every doctor's slots — the superset used as the tool `time` enum. */
+export function slotTimes(): string[] {
+  const set = new Set<string>();
+  for (const d of config.doctors) for (const t of slotsFor(d)) set.add(t);
+  return [...set].sort();
+}
+
+function weekdayOf(dateStr: string): string {
+  return WEEKDAYS[new Date(`${dateStr}T00:00:00`).getDay()];
+}
+
+/** Does this doctor hold clinic on the given date's weekday? */
+export function doctorWorksOn(doctor: Doctor, dateStr: string): boolean {
+  return doctor.workingDays.includes(weekdayOf(dateStr));
 }
 
 function fmt(d: Date): string {
@@ -59,13 +115,15 @@ export interface Day {
   label: string; // e.g. "Tue 24 Jun"
 }
 
-/** Working days (Mon–Sat) within the next WINDOW_DAYS calendar days. */
+/** Bookable days within the window: every date on which AT LEAST ONE doctor holds
+ *  clinic (union of all doctors' working weekdays). */
 export function workingDays(): Day[] {
   const days: Day[] = [];
+  const open = new Set(config.doctors.flatMap((d) => d.workingDays));
   const today = new Date();
-  for (let i = 0; i < WINDOW_DAYS; i++) {
+  for (let i = 0; i < config.windowDays; i++) {
     const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() + i);
-    if (d.getDay() === 0) continue; // skip Sunday
+    if (!open.has(WEEKDAYS[d.getDay()])) continue; // no doctor works this weekday
     days.push({
       date: fmt(d),
       label: d.toLocaleDateString("en-GB", {
@@ -76,6 +134,22 @@ export function workingDays(): Day[] {
     });
   }
   return days;
+}
+
+/** "Mon–Sat" when the working days are one contiguous run, else "Mon, Wed, Fri". */
+export function daysLabel(workingDays: string[]): string {
+  const idx = workingDays
+    .map((w) => WEEKDAYS.indexOf(w as (typeof WEEKDAYS)[number]))
+    .sort((a, b) => a - b);
+  const contiguous = idx.every((n, i) => i === 0 || n === idx[i - 1] + 1);
+  if (contiguous && idx.length > 2) return `${WEEKDAYS[idx[0]]}–${WEEKDAYS[idx[idx.length - 1]]}`;
+  return idx.map((n) => WEEKDAYS[n]).join(", ");
+}
+
+/** "9:00–13:00, 15:00–18:00" from a doctor's hour windows (no leading zero on hour). */
+export function hoursLabel(hours: [string, string][]): string {
+  const trim = (t: string) => t.replace(/^0/, "");
+  return hours.map(([s, e]) => `${trim(s)}–${trim(e)}`).join(", ");
 }
 
 export function today(): string {
@@ -103,6 +177,7 @@ export function resolveDoctor(input: string): Doctor | null {
 // ---- persistence ----
 const DATA_DIR = fileURLToPath(new URL("../data/", import.meta.url));
 const FILE = fileURLToPath(new URL("../data/bookings.json", import.meta.url));
+const CONFIG_FILE = fileURLToPath(new URL("../data/clinic-config.json", import.meta.url));
 let bookings: Booking[] = [];
 
 function save(): void {
@@ -110,26 +185,66 @@ function save(): void {
   writeFileSync(FILE, JSON.stringify(bookings, null, 2));
 }
 
+/** Load the operator-editable clinic config (doctors + their days/hours). On first
+ *  run it writes the defaults to clinic-config.json; after that an operator can edit
+ *  that file (and restart) to change each doctor's availability. */
+export function loadConfig(): void {
+  if (existsSync(CONFIG_FILE)) {
+    try {
+      const parsed = JSON.parse(readFileSync(CONFIG_FILE, "utf8")) as ClinicConfigFile;
+      if (parsed?.doctors?.length) {
+        config = {
+          windowDays: parsed.windowDays || DEFAULT_CONFIG.windowDays,
+          slotMinutes: parsed.slotMinutes || DEFAULT_CONFIG.slotMinutes,
+          doctors: parsed.doctors,
+        };
+        DOCTORS = config.doctors;
+        return;
+      }
+    } catch {
+      /* fall through to defaults */
+    }
+  }
+  config = DEFAULT_CONFIG;
+  DOCTORS = config.doctors;
+  if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
+  writeFileSync(CONFIG_FILE, JSON.stringify(DEFAULT_CONFIG, null, 2));
+}
+
 function seed(): Booking[] {
-  const days = workingDays();
-  const pick = (i: number) => days[Math.min(i, days.length - 1)]?.date ?? today();
-  const mk = (
-    doctorId: string,
-    date: string,
-    time: string,
-    name: string,
-    phone: string
-  ): Booking => ({ id: randomUUID(), doctorId, date, time, name, phone, createdAt: new Date().toISOString() });
-  return [
-    mk("dr-meera", pick(0), "10:00", "Anand Kumar", "9000000001"),
-    mk("dr-meera", pick(0), "11:30", "Fathima Rashid", "9000000002"),
-    mk("dr-rajeev", pick(1), "09:30", "Lakshmi Pillai", "9000000003"),
-    mk("dr-rajeev", pick(2), "15:00", "Joseph Thomas", "9000000004"),
-    mk("dr-meera", pick(3), "14:30", "Sneha Varma", "9000000005"),
+  const mk = (doctorId: string, date: string, time: string, name: string, phone: string): Booking => ({
+    id: randomUUID(),
+    doctorId,
+    date,
+    time,
+    name,
+    phone,
+    createdAt: new Date().toISOString(),
+  });
+  // Place each sample on a date the doctor actually works, at a real slot of theirs.
+  const datesFor = (doc: Doctor) => workingDays().filter((d) => doctorWorksOn(doc, d.date)).map((d) => d.date);
+  const out: Booking[] = [];
+  const samples: { doctorId: string; dayIdx: number; slotIdx: number; name: string; phone: string }[] = [
+    { doctorId: "dr-meera", dayIdx: 0, slotIdx: 2, name: "Anand Kumar", phone: "9000000001" },
+    { doctorId: "dr-meera", dayIdx: 0, slotIdx: 5, name: "Fathima Rashid", phone: "9000000002" },
+    { doctorId: "dr-rajeev", dayIdx: 0, slotIdx: 0, name: "Lakshmi Pillai", phone: "9000000003" },
+    { doctorId: "dr-rajeev", dayIdx: 1, slotIdx: 6, name: "Joseph Thomas", phone: "9000000004" },
+    { doctorId: "dr-meera", dayIdx: 2, slotIdx: 10, name: "Sneha Varma", phone: "9000000005" },
   ];
+  for (const s of samples) {
+    const doc = config.doctors.find((d) => d.id === s.doctorId);
+    if (!doc) continue;
+    const dates = datesFor(doc);
+    const slots = slotsFor(doc);
+    const date = dates[Math.min(s.dayIdx, dates.length - 1)];
+    const time = slots[Math.min(s.slotIdx, slots.length - 1)];
+    if (date && time) out.push(mk(doc.id, date, time, s.name, s.phone));
+  }
+  return out;
 }
 
 export function loadBookings(): void {
+  loadConfig();
   if (existsSync(FILE)) {
     try {
       bookings = JSON.parse(readFileSync(FILE, "utf8"));
@@ -145,11 +260,21 @@ export function loadBookings(): void {
 // ---- queries ----
 export function getConfig() {
   return {
-    doctors: DOCTORS,
-    slots: slotTimes(),
+    // Each doctor carries their own days/hours plus the derived per-doctor slot list
+    // and human labels (so the UI and agent prompt never drift from the real hours).
+    doctors: config.doctors.map((d) => ({
+      id: d.id,
+      name: d.name,
+      specialty: d.specialty,
+      workingDays: d.workingDays,
+      hours: d.hours,
+      slots: slotsFor(d),
+      hoursLabel: hoursLabel(d.hours),
+      daysLabel: daysLabel(d.workingDays),
+    })),
+    slots: slotTimes(), // superset of all doctors' slots — the tool `time` enum
     days: workingDays(),
     today: today(),
-    hours: "9:00–13:00, 14:00–17:00",
   };
 }
 
@@ -168,12 +293,22 @@ export function getAvailability(doctorInput: string, date: string) {
   if (!days.some((d) => d.date === date)) {
     return { ok: false as const, error: "That date is not a working day in the next two weeks." };
   }
+  if (!doctorWorksOn(doctor, date)) {
+    return {
+      ok: false as const,
+      doctor,
+      date,
+      available: [],
+      error: `${doctor.name} does not have clinic that day. Days: ${daysLabel(doctor.workingDays)}.`,
+    };
+  }
   const taken = new Set(
     bookings.filter((b) => b.doctorId === doctor.id && b.date === date).map((b) => b.time)
   );
   const isToday = date === today();
   const cur = nowHHMM();
-  const free = slotTimes().filter((t) => !taken.has(t) && (!isToday || t > cur));
+  // This doctor's OWN slots only, minus taken and (today) past slots.
+  const free = slotsFor(doctor).filter((t) => !taken.has(t) && (!isToday || t > cur));
   return { ok: true as const, doctor, date, available: free };
 }
 
@@ -193,8 +328,16 @@ export function book(input: BookInput) {
     return { ok: false as const, error: "A valid phone number is required." };
   if (!workingDays().some((d) => d.date === input.date))
     return { ok: false as const, error: "That date is not a working day in the next two weeks." };
-  if (!slotTimes().includes(input.time))
-    return { ok: false as const, error: "That time is not a valid 30-minute slot." };
+  if (!doctorWorksOn(doctor, input.date))
+    return {
+      ok: false as const,
+      error: `${doctor.name} does not have clinic that day (${daysLabel(doctor.workingDays)} only).`,
+    };
+  if (!slotsFor(doctor).includes(input.time))
+    return {
+      ok: false as const,
+      error: `That time is not within ${doctor.name}'s hours (${hoursLabel(doctor.hours)}).`,
+    };
   if (input.date === today() && input.time <= nowHHMM())
     return { ok: false as const, error: "That time has already passed." };
   const clash = bookings.find(

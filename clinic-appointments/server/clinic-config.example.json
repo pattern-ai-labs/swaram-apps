@@ -1,0 +1,20 @@
+{
+  "windowDays": 14,
+  "slotMinutes": 30,
+  "doctors": [
+    {
+      "id": "dr-meera",
+      "name": "Dr. Meera Nair",
+      "specialty": "General Medicine",
+      "workingDays": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+      "hours": [["09:00", "13:00"], ["14:00", "17:00"]]
+    },
+    {
+      "id": "dr-rajeev",
+      "name": "Dr. Rajeev Menon",
+      "specialty": "Pediatrics",
+      "workingDays": ["Mon", "Wed", "Fri", "Sat"],
+      "hours": [["10:00", "13:00"], ["15:00", "18:00"]]
+    }
+  ]
+}

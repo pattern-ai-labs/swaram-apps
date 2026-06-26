@@ -210,7 +210,10 @@ a { color: inherit; }
 .doc-head { display: flex; flex-direction: column; gap: 1px; padding-bottom: 6px; border-bottom: 1px solid var(--line); }
 .doc-head strong { font-family: var(--font-display); font-weight: 600; font-size: 15px; }
 .doc-head span { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint); }
+.doc-head .doc-hours { text-transform: none; letter-spacing: 0; font-size: 10px; color: var(--muted); margin-top: 2px; }
 .slots { display: flex; flex-direction: column; gap: 5px; }
+.slot.closed { background: transparent; border-style: dashed; opacity: 0.65; justify-content: center; }
+.slot.closed .open { font-style: italic; }
 .slot { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 7px 11px; border-radius: 9px; border: 1px solid var(--line); font-size: 13px; }
 .slot .t { font-family: var(--font-mono); color: var(--muted); font-size: 12px; }
 .slot.free { background: var(--panel); }
