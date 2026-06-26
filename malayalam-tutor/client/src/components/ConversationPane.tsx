@@ -29,7 +29,12 @@ export default function ConversationPane({
 }) {
   const logRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    logRef.current?.scrollTo({ top: logRef.current.scrollHeight });
+    const el = logRef.current;
+    if (!el) return;
+    // Only auto-scroll if the user is already near the bottom, so scrolling up to
+    // read earlier messages isn't yanked back down on each new message.
+    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
+    if (nearBottom) el.scrollTo({ top: el.scrollHeight });
   }, [messages]);
 
   // Space interrupts the agent while it's speaking (half-duplex; the mic is held,
@@ -74,7 +79,7 @@ export default function ConversationPane({
         {messages.map((m) => (
           <div
             key={m.id}
-            className={`bubble ${m.role} ${m.streaming ? "streaming" : ""}`}
+            className={`bubble msg-${m.role} ${m.streaming ? "streaming" : ""}`}
           >
             {m.role === "learner"
               ? m.text || <em>🎤 you spoke</em>
@@ -88,7 +93,7 @@ export default function ConversationPane({
           {learnerSpeaking
             ? "🎙️ listening…"
             : tutorSpeaking
-            ? "🔊 tutor speaking…"
+            ? "🔊 agent speaking…"
             : muted
             ? "🔇 muted"
             : "🎙️ mic on"}

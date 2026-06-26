@@ -4,6 +4,23 @@ All notable changes to **swaram-apps** are documented here. The format is based 
 [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.0.5] — 2026-06-26
+
+### Fixed
+- **All apps** — the agent's chat bubble could render **full-height** (stretched down the
+  whole conversation pane) instead of hugging its text. Cause: the bubble's role class
+  `tutor` collided with the app-shell `.tutor { height: 100% }` rule. Bubble role classes
+  are now namespaced (`msg-tutor` / `msg-learner`).
+- **All apps** — reworked the **mobile conversation layout**: the pane is now a CSS grid
+  (header / scrolling log / pinned footer), panes stack and use `dvh` units (which track
+  the mobile address bar, unlike `vh`), each scrolls internally, and the mic/Interrupt
+  footer stays pinned — fixing the empty-box and bubble/footer overlap some phones showed
+  after a few messages. Added safe-area padding for notch phones.
+
+### Changed
+- **All apps** — the speaking indicator now reads "agent speaking…" (was "tutor
+  speaking…"), and the transcript only auto-scrolls when you're already near the bottom.
+
 ## [1.0.4] — 2026-06-26
 
 ### Added
@@ -91,6 +108,7 @@ uses Amazon Bedrock).
 - Each app carries its own copy of the reusable **voice kit** — to build a new agent,
   swap the domain and keep the pipeline.
 
+[1.0.5]: https://github.com/pattern-ai-labs/swaram-apps/releases/tag/v1.0.5
 [1.0.4]: https://github.com/pattern-ai-labs/swaram-apps/releases/tag/v1.0.4
 [1.0.3]: https://github.com/pattern-ai-labs/swaram-apps/releases/tag/v1.0.3
 [1.0.2]: https://github.com/pattern-ai-labs/swaram-apps/releases/tag/v1.0.2

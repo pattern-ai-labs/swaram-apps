@@ -72,7 +72,7 @@ realtime voice · Amazon Bedrock (tutor only).
 
 ## Releases
 
-Current: **v1.0.4**. See **[CHANGELOG.md](./CHANGELOG.md)** for what's
+Current: **v1.0.5**. See **[CHANGELOG.md](./CHANGELOG.md)** for what's
 in each version, and the [Releases](https://github.com/pattern-ai-labs/swaram-apps/releases)
 page for tagged downloads.
 

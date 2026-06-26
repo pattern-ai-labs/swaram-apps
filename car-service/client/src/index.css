@@ -231,7 +231,9 @@ a { color: inherit; }
 .primary.big { padding: 15px 30px; font-size: 16px; border-radius: 13px; }
 
 /* ============ Conversation ============ */
-.conv-pane { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+/* Canonical chat layout: fixed header / scrollable log / pinned footer.
+   Grid rows avoid the flex `flex:1`+`overflow:visible` automatic-min-size footgun. */
+.conv-pane { flex: 1; display: grid; grid-template-rows: auto 1fr auto; min-height: 0; }
 .conv-head { display: flex; align-items: center; gap: 12px; padding: 13px 18px; border-bottom: 1px solid var(--line); }
 .conv-head .status { color: var(--muted); font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.06em; }
 
@@ -250,14 +252,17 @@ a { color: inherit; }
 .interrupt { background: var(--danger); color: #2a0c0a; border: 0; border-radius: 9px; padding: 7px 15px; font-weight: 600; font-size: 13px; }
 .interrupt:hover { filter: brightness(1.08); }
 
-.conv-log { flex: 1; overflow: auto; padding: 20px 18px; display: flex; flex-direction: column; gap: 11px; }
+.conv-log { min-height: 0; overflow: auto; padding: 20px 18px; display: flex; flex-direction: column; gap: 11px; }
 .conv-log .center { margin: auto; max-width: 30ch; color: var(--faint); }
+/* Bubble role classes are namespaced (msg-tutor / msg-learner) so they don't collide
+   with the app-shell `.tutor { height: 100% }` rule — that collision was stretching
+   every agent bubble to full height. */
 .bubble { flex-shrink: 0; max-width: min(76%, 520px); overflow-wrap: anywhere; padding: 11px 15px; border-radius: 15px; line-height: 1.55; font-size: 15px; }
-.bubble.tutor { background: var(--gold-soft); border: 1px solid rgba(230, 180, 80, 0.28); align-self: flex-start; border-bottom-left-radius: 5px; }
-.bubble.learner { background: var(--teal-soft); border: 1px solid rgba(84, 214, 196, 0.26); align-self: flex-end; border-bottom-right-radius: 5px; }
+.bubble.msg-tutor { background: var(--gold-soft); border: 1px solid rgba(230, 180, 80, 0.28); align-self: flex-start; border-bottom-left-radius: 5px; }
+.bubble.msg-learner { background: var(--teal-soft); border: 1px solid rgba(84, 214, 196, 0.26); align-self: flex-end; border-bottom-right-radius: 5px; }
 .bubble.streaming { opacity: 0.6; }
 
-.conv-foot { display: flex; align-items: center; gap: 10px; padding: 13px 18px; border-top: 1px solid var(--line); }
+.conv-foot { display: flex; align-items: center; gap: 10px; padding: 13px 18px calc(13px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); }
 .conv-foot .state { font-size: 13px; color: var(--muted); font-family: var(--font-mono); letter-spacing: 0.04em; }
 .ended-note { padding: 13px 18px; border-top: 1px solid var(--line); font-size: 14px; color: var(--muted); }
 .link { background: none; border: 0; color: var(--gold); padding: 0; font: inherit; }
@@ -320,19 +325,22 @@ a { color: inherit; }
 .spinner { width: 32px; height: 32px; border: 2.5px solid var(--line-2); border-top-color: var(--gold); border-radius: 50%; animation: spin 0.8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* Phones (narrow) and very short (landscape) viewports: the fixed-height two-pane
-   layout has no room for the conversation, so its bubbles get crushed together.
-   On these screens we STACK the panes and let the whole PAGE scroll instead of
-   nesting a scroll container inside a fragile grid+flex height chain. With the
-   height lock released, the bubbles are ordinary in-flow blocks separated by a
-   gap — they can never overlap, and it's immune to the mobile URL-bar viewport
-   quirks. (Trade-off: the mic/Interrupt bar scrolls with the page.) */
+/* Phones (narrow) and very short (landscape) viewports: stack the two panes
+   vertically and size everything to the *visible* viewport with dvh (which tracks
+   the mobile URL bar, unlike vh). Each pane keeps its own internal scroll, so the
+   conversation footer (mic / Interrupt) stays pinned at the bottom — no page-scroll,
+   no empty box, no bubble/footer overlap. */
 @media (max-width: 840px), (max-height: 560px) {
-  .tutor { height: auto; min-height: 100%; }
-  .split { grid-template-columns: 1fr; }
-  .lesson-pane { border-right: 0; border-bottom: 1px solid var(--line); max-height: 50vh; }
-  .conv-pane { min-height: 70vh; }
-  .conv-log { overflow: visible; }
+  /* Stack the panes and fill the *visible* viewport (dvh tracks the mobile URL bar,
+     unlike vh). Each pane scrolls internally; the conversation footer (Interrupt)
+     stays pinned at the bottom — no page-scroll, no empty box, no overlap. */
+  .tutor { height: 100dvh; }
+  .split {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(120px, 42dvh) 1fr;
+    min-height: 0;
+  }
+  .lesson-pane { border-right: 0; border-bottom: 1px solid var(--line); min-height: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {
