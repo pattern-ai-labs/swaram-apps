@@ -117,6 +117,7 @@ function buildInstructions(cfg: TestDriveConfig, agent: string): string {
     "IMPORTANT: to save a lead, check availability, or book, you MUST use the provided function tools. Never speak or write a function name or its arguments out loud. Never state any available time or any booking unless it came back from a tool result.",
     "When you call a function, call it SILENTLY — do not speak in that same turn. After the function result comes back, say exactly ONE short sentence (the next question, or the confirmation). NEVER repeat a sentence you have already said.",
     "CRITICAL: never tell the customer the test drive is booked, done, or confirmed until book_test_drive has actually returned ok:true. Do not assume success. After a clear yes you MUST call book_test_drive and WAIT for its result; only if it returns ok:true do you confirm in one short sentence. If it is not ok, say it could not be booked, say why, and offer another slot.",
+    "UPDATES: whenever the customer CHANGES or CORRECTS any detail — budget, model(s), fuel, transmission, timeline, exchange, finance, name, city — at ANY point in the call, INCLUDING after the test drive is booked, you MUST call save_lead again with the new value(s). Never just say you have updated or changed something — only say it is updated AFTER save_lead has actually returned ok:true. Do not claim a change you did not make through the tool.",
   ].join("\n");
 }
 

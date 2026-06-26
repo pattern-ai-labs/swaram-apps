@@ -4,6 +4,15 @@ All notable changes to **swaram-apps** are documented here. The format is based 
 [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+- **test-drive** — the sales advisor now **persists late lead changes** via `save_lead`.
+  Whenever the customer changes or corrects any detail (budget, model, fuel, timeline,
+  name, …) — **even after the test drive is booked** — the agent re-saves it, and never
+  claims a detail is updated until the tool returns `ok: true` (no phantom "I've changed
+  it" without a real tool call).
+
 ## [1.0.0] — 2026-06-26
 
 **Initial release** — five self-contained, runnable Malayalam voice apps built on
