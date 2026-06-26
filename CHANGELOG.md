@@ -4,7 +4,14 @@ All notable changes to **swaram-apps** are documented here. The format is based 
 [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.0.1] — 2026-06-26
+
+### Added
+- **test-drive** — a **booked-test-drives board** on the idle left pane: a day strip plus
+  a dealership × time-slot grid (booked slots show `model · first name`, full details on
+  hover), mirroring the car-service centre board. The pane swaps to the live lead card
+  during a call, and the board refreshes after each booking. It is **screen-only** — there
+  is no `list_bookings` voice tool, so no customer details reach the agent.
 
 ### Fixed
 - **test-drive** — the sales advisor now **persists late lead changes** via `save_lead`.
@@ -47,4 +54,5 @@ uses Amazon Bedrock).
 - Each app carries its own copy of the reusable **voice kit** — to build a new agent,
   swap the domain and keep the pipeline.
 
+[1.0.1]: https://github.com/pattern-ai-labs/swaram-apps/releases/tag/v1.0.1
 [1.0.0]: https://github.com/pattern-ai-labs/swaram-apps/releases/tag/v1.0.0

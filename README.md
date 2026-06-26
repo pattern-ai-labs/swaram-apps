@@ -11,7 +11,7 @@ for your own Malayalam voice agent.
 |---|---|---|
 | **[clinic-appointments](./clinic-appointments)** | Voice receptionist books & cancels doctor appointments (function calling + a live schedule board, name+phone identity check on cancel) | swaram key |
 | **[car-service](./car-service)** | Voice advisor books car-service slots (model, centre, work notes) | swaram key |
-| **[test-drive](./test-drive)** | Sales advisor qualifies a lead field-by-field and books a test drive (live lead card) | swaram key |
+| **[test-drive](./test-drive)** | Sales advisor qualifies a lead field-by-field and books a test drive (live lead card + a booked-drives board) | swaram key |
 | **[appliance-support](./appliance-support)** | Care agent logs / edits / cancels a TV·fridge·AC·washing-machine repair ticket | swaram key |
 | **[malayalam-tutor](./malayalam-tutor)** | Upload a document, then learn it by talking to a voice tutor | swaram key **+ AWS Bedrock key** |
 
@@ -72,7 +72,7 @@ realtime voice · Amazon Bedrock (tutor only).
 
 ## Releases
 
-Current: **v1.0.0** (initial release). See **[CHANGELOG.md](./CHANGELOG.md)** for what's
+Current: **v1.0.1**. See **[CHANGELOG.md](./CHANGELOG.md)** for what's
 in each version, and the [Releases](https://github.com/pattern-ai-labs/swaram-apps/releases)
 page for tagged downloads.
 

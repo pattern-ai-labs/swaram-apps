@@ -58,6 +58,9 @@ export interface TestDrive {
   name: string;
   phone: string;
 }
+export interface TestDriveBooking extends TestDrive {
+  dealershipName: string;
+}
 
 export async function getTestDriveConfig(): Promise<TestDriveConfig> {
   const r = await fetch("/api/testdrive/config");
@@ -98,4 +101,10 @@ export async function bookTestDrive(payload: {
     body: JSON.stringify(payload),
   });
   return r.json();
+}
+
+export async function getTestDriveBookings(): Promise<TestDriveBooking[]> {
+  const r = await fetch("/api/testdrive/bookings");
+  if (!r.ok) throw new Error("Could not load bookings.");
+  return (await r.json()).bookings as TestDriveBooking[];
 }

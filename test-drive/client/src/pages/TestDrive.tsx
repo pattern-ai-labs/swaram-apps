@@ -4,14 +4,17 @@ import { useVoiceSession } from "../lib/useVoiceSession";
 import type { VoiceTool } from "../lib/swaramClient";
 import {
   getTestDriveConfig,
+  getTestDriveBookings,
   saveLead,
   checkAvailability,
   bookTestDrive,
   type TestDriveConfig,
   type Lead,
   type TestDrive,
+  type TestDriveBooking,
 } from "../lib/testdriveApi";
 import LeadCard from "../components/LeadCard";
+import DealershipBoard from "../components/DealershipBoard";
 import ConversationPane from "../components/ConversationPane";
 
 function buildTools(cfg: TestDriveConfig): VoiceTool[] {
@@ -127,6 +130,8 @@ export default function TestDrivePage() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [lead, setLead] = useState<Partial<Lead> | null>(null);
   const [testDrive, setTestDrive] = useState<(TestDrive & { dealershipName?: string }) | null>(null);
+  const [bookings, setBookings] = useState<TestDriveBooking[]>([]);
+  const [selectedDate, setSelectedDate] = useState<string>("");
   const leadIdRef = useRef<string | undefined>(undefined);
 
   const session = useVoiceSession();
@@ -134,7 +139,10 @@ export default function TestDrivePage() {
   useEffect(() => {
     (async () => {
       try {
-        setConfig(await getTestDriveConfig());
+        const cfg = await getTestDriveConfig();
+        setConfig(cfg);
+        setSelectedDate(cfg.today);
+        setBookings(await getTestDriveBookings());
       } catch (e: any) {
         setLoadError(e.message || "Could not load the dealership.");
       }
@@ -169,6 +177,8 @@ export default function TestDrivePage() {
             leadIdRef.current = res.lead?.id ?? leadIdRef.current;
             if (res.lead) setLead(res.lead);
             setTestDrive({ ...res.testDrive, dealershipName: res.dealership?.name });
+            setBookings(await getTestDriveBookings());
+            if (args.date) setSelectedDate(args.date);
           }
           reply(res);
         } else {
@@ -218,11 +228,24 @@ export default function TestDrivePage() {
         <div className="split">
           <div className="lesson-pane">
             <div className="lesson-head">
-              <h2>Prospect</h2>
-              <span className="muted">{config.brand.name} · {config.dealerships.length} dealerships</span>
+              <h2>{session.active ? "Prospect" : "Booked test drives"}</h2>
+              <span className="muted">
+                {session.active
+                  ? `${config.brand.name} · ${config.dealerships.length} dealerships`
+                  : `${config.hours} · Mon–Sat`}
+              </span>
             </div>
             <div className="lesson-body board-body">
-              <LeadCard lead={lead} testDrive={testDrive} />
+              {session.active ? (
+                <LeadCard lead={lead} testDrive={testDrive} />
+              ) : (
+                <DealershipBoard
+                  config={config}
+                  bookings={bookings}
+                  selectedDate={selectedDate}
+                  onSelectDate={setSelectedDate}
+                />
+              )}
             </div>
           </div>
 
