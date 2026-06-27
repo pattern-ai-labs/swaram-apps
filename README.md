@@ -26,6 +26,15 @@ speech model). In these apps the browser talks to swaram **directly** over a
 WebSocket, using a **short-lived token** minted by each app's server, so your secret
 API key never reaches the client.
 
+## API documentation
+
+These apps are built on the **swaram real-time voice API**. For the full reference —
+the WebSocket event protocol, models, voices, function calling, and audio format — see
+the official docs:
+
+- **[github.com/pattern-ai-labs/swaram](https://github.com/pattern-ai-labs/swaram)** — developer documentation
+- **[swaram.live/docs](https://swaram.live/docs)** — hosted docs
+
 ## Run any app
 
 ```bash
