@@ -6,7 +6,7 @@ import { saveLesson, type SavedLesson } from "../lessons.js";
 
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB — "mostly small docs"
+  limits: { fileSize: 25 * 1024 * 1024 }, // 25 MB
 });
 
 export const ingestRouter = Router();

@@ -161,9 +161,11 @@ sweep of finished jobs. The client poll interval (default 3s) and the processing
 copy are in `onSubmit` in `Tutor.tsx`.
 
 ### 6.5 Accepted file types / size
-`server/src/routes/ingest.ts` uses `multer` with a 10 MB limit and treats `.pdf` as a
+`server/src/routes/ingest.ts` uses `multer` with a **25 MB** limit and treats `.pdf` as a
 Bedrock document block, anything else as UTF-8 text. Adjust the limit or the
-type handling there.
+type handling there. (A PDF is sent to Bedrock as-is; what matters for processing is
+its page/token count, not its megabytes — very long PDFs can exceed the model's context
+regardless of file size.)
 
 ## 7. API
 

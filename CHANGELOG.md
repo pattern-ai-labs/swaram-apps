@@ -4,6 +4,14 @@ All notable changes to **swaram-apps** are documented here. The format is based 
 [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.0.6] — 2026-06-27
+
+### Changed
+- **malayalam-tutor** — raised the document **upload limit from 10 MB to 25 MB**. Real
+  lesson PDFs (textbook chapters) routinely exceed 10 MB and were being rejected at
+  upload. Note the real processing limit is the document's **page/token count, not its
+  megabytes** — a PDF is sent to Bedrock as a document block.
+
 ## [1.0.5] — 2026-06-26
 
 ### Fixed
@@ -108,6 +116,7 @@ uses Amazon Bedrock).
 - Each app carries its own copy of the reusable **voice kit** — to build a new agent,
   swap the domain and keep the pipeline.
 
+[1.0.6]: https://github.com/pattern-ai-labs/swaram-apps/releases/tag/v1.0.6
 [1.0.5]: https://github.com/pattern-ai-labs/swaram-apps/releases/tag/v1.0.5
 [1.0.4]: https://github.com/pattern-ai-labs/swaram-apps/releases/tag/v1.0.4
 [1.0.3]: https://github.com/pattern-ai-labs/swaram-apps/releases/tag/v1.0.3
