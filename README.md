@@ -13,6 +13,7 @@ for your own Malayalam voice agent.
 | **[car-service](./car-service)** | Voice advisor books car-service slots (model, centre, work notes; editable centres/hours/models) | swaram key |
 | **[test-drive](./test-drive)** | Sales advisor qualifies a lead field-by-field and books a test drive (live lead card + a booked-drives board; editable dealerships/hours/models/enrich) | swaram key |
 | **[appliance-support](./appliance-support)** | Care agent logs / edits / cancels a TV·fridge·AC·washing-machine repair ticket | swaram key |
+| **[subash-plivo-phone](./subash-plivo-phone)** | Product registration by **phone** *and* browser — a **Plivo ⇄ swaram** telephony bridge; customers **call a number** and talk to the agent (or use the browser), and completed registrations show in a shared dashboard | swaram key **+ a Plivo number** (for the phone channel) |
 | **[malayalam-tutor](./malayalam-tutor)** | Upload a document, then learn it by talking to a voice tutor | swaram key **+ AWS Bedrock key** |
 
 Every app has its **own detailed README** with setup, how it works, and how to
@@ -81,7 +82,7 @@ realtime voice · Amazon Bedrock (tutor only).
 
 ## Releases
 
-Current: **v1.0.6**. See **[CHANGELOG.md](./CHANGELOG.md)** for what's
+Current: **v1.1.0**. See **[CHANGELOG.md](./CHANGELOG.md)** for what's
 in each version, and the [Releases](https://github.com/pattern-ai-labs/swaram-apps/releases)
 page for tagged downloads.
 

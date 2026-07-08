@@ -4,6 +4,17 @@ All notable changes to **swaram-apps** are documented here. The format is based 
 [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.1.0] — 2026-07-08
+
+### Added
+- **subash-plivo-phone** — a new app: **product registration by phone _and_ browser**. It
+  adds a **Plivo ⇄ swaram telephony bridge**, so customers can **call a phone number** and
+  talk to the Malayalam voice agent — μ-law 8 kHz ⇄ PCM16 24 kHz transcoding, barge-in
+  (flush on interrupt), and function calling — alongside the existing browser channel. Both
+  channels share one registration store, and a **single server** hosts the dashboard **and**
+  the bridge on one port. Ships an in-depth README covering Plivo account setup, buying and
+  wiring a number, and India KYC (with links to Plivo's own docs). *Not affiliated with Plivo.*
+
 ## [1.0.6] — 2026-06-27
 
 ### Changed
